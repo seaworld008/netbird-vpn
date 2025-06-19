@@ -1,0 +1,104 @@
+# NetBird VPN Docker-Compose 配置文件
+# 部署目录：/data/netbird/
+# 公网IP：120.50.145.50
+
+version: "3.8"
+
+services:
+  # NetBird 管理服务
+  management:
+    image: netbirdio/management:v0.47.2
+    container_name: netbird-management
+    restart: always
+    volumes:
+      - ./management:/var/lib/netbird
+      - ./config:/etc/netbird
+    environment:
+      - NB_MANAGEMENT_DOMAIN=your.domain.com
+      - NB_MANAGEMENT_LETSENCRYPT_ENABLED=true
+      - NB_MANAGEMENT_ADMIN_EMAIL=admin@your.domain.com
+      - NB_MANAGEMENT_SINGLE_ACCOUNT_MODE_DOMAIN=netbird.local
+      - NB_MANAGEMENT_DISABLE_ANONYMOUS_METRICS=true
+      - NB_LOG_LEVEL=info
+    ports:
+      - "443:443"
+      - "80:80"
+    networks:
+      - netbird
+
+  # NetBird 信号服务
+  signal:
+    image: netbirdio/signal:v0.47.2
+    container_name: netbird-signal
+    restart: always
+    environment:
+      - SIGNAL_ADDR=:10000
+      - NB_LOG_LEVEL=info
+    ports:
+      - "10000:10000"
+    networks:
+      - netbird
+
+  # NetBird 中继服务（用于 P2P 连接失败时的回退）
+  relay:
+    image: netbirdio/relay:v0.47.2
+    container_name: netbird-relay
+    restart: always
+    environment:
+      - RELAY_ADDR=:3478
+      - NB_LOG_LEVEL=info
+    ports:
+      - "33073:33073"
+    networks:
+      - netbird
+
+  # Coturn STUN/TURN 服务器（用于 NAT 穿透）
+  coturn:
+    image: coturn/coturn:4.6.2-r3
+    container_name: netbird-coturn
+    restart: always
+    volumes:
+      - ./turn:/var/lib/coturn
+    environment:
+      - DETECT_EXTERNAL_IP=yes
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      - "49152-65535:49152-65535/udp"
+    command: >
+      --log-file=stdout
+      --external-ip=120.50.145.50
+      --listening-ip=0.0.0.0
+      --relay-ip=120.50.145.50
+      --min-port=49152
+      --max-port=65535
+      --realm=netbird.local
+      --user=netbird:NetBird2024!
+      --fingerprint
+      --lt-cred-mech
+      --no-cli
+      --no-tls
+      --no-dtls
+      --no-software-attribute
+      --pidfile="/var/tmp/turnserver.pid"
+    networks:
+      - netbird
+
+  # PostgreSQL 数据库（可选，默认使用 SQLite）
+  postgres:
+    image: postgres:16-alpine
+    container_name: netbird-postgres
+    restart: always
+    environment:
+      - POSTGRES_DB=netbird
+      - POSTGRES_USER=netbird
+      - POSTGRES_PASSWORD=NetBirdDB2024!
+    volumes:
+      - ./postgres:/var/lib/postgresql/data
+    networks:
+      - netbird
+    # 如果不需要 PostgreSQL，可以注释掉这个服务
+
+networks:
+  netbird:
+    driver: bridge 
