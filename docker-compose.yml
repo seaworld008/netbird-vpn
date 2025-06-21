@@ -1,132 +1,151 @@
-# NetBird VPN Docker-Compose 配置文件
-# 部署目录：/data/netbird/
-# 公网IP：120.50.145.50
-# 数据库：PostgreSQL（替代默认SQLite）
+# NetBird VPN 官方标准 Docker Compose 配置
+# 基于 getting-started-with-zitadel.sh 官方脚本
+# 包含：Caddy + Dashboard + Signal + Relay + Management + Coturn + Zitadel + PostgreSQL
 
-version: "3.8"
+version: "3.4"
 
 services:
-  # PostgreSQL 数据库（管理端数据库）
-  postgres:
-    image: postgres:16-alpine
-    container_name: netbird-postgres
-    restart: always
-    environment:
-      - POSTGRES_DB=netbird
-      - POSTGRES_USER=netbird
-      - POSTGRES_PASSWORD=NetBirdDB2024!
-      - POSTGRES_INITDB_ARGS=--encoding=UTF-8 --lc-collate=C --lc-ctype=C
-    volumes:
-      - ./postgres:/var/lib/postgresql/data
-      - ./postgres-init:/docker-entrypoint-initdb.d  # 初始化脚本目录
+  # Caddy reverse proxy
+  caddy:
+    image: caddy
+    restart: unless-stopped
+    networks: [ netbird ]
     ports:
-      - "5432:5432"  # 可选：如需外部访问数据库
-    networks:
-      - netbird
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U netbird -d netbird"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # NetBird 管理服务（连接PostgreSQL）
-  management:
-    image: netbirdio/management:v0.47.2
-    container_name: netbird-management
-    restart: always
-    depends_on:
-      postgres:
-        condition: service_healthy
+      - '443:443'
+      - '443:443/udp'
+      - '80:80'
+      - '8080:8080'
     volumes:
-      - ./management:/var/lib/netbird
-      - ./config:/etc/netbird
-    environment:
-      # PostgreSQL 数据库配置（官方环境变量）
-      - NETBIRD_STORE_ENGINE_POSTGRES_DSN=postgres://netbird:NetBirdDB2024!@postgres:5432/netbird?sslmode=disable
-      
-      # 管理服务基础配置
-      - NETBIRD_MGMT_SINGLE_ACCOUNT_MODE_DOMAIN=netbird.local
-      - NETBIRD_DISABLE_ANONYMOUS_METRICS=true
-      
-      # 可选：数据库连接池配置
-      - NETBIRD_STORE_ENGINE_POSTGRES_MAX_OPEN_CONNS=25
-      - NETBIRD_STORE_ENGINE_POSTGRES_MAX_IDLE_CONNS=5
-      - NETBIRD_STORE_ENGINE_POSTGRES_CONN_MAX_LIFETIME=1h
-    ports:
-      - "33073:33073"  # Management API & gRPC
-      - "443:443"     # HTTPS (如果启用Let's Encrypt)
-      - "80:80"       # HTTP (用于Let's Encrypt验证)
-    networks:
-      - netbird
-    command: [
-      "--port", "33073",
-      "--log-file", "console",
-      "--disable-anonymous-metrics=true",
-      "--single-account-mode-domain=netbird.local",
-      "--dns-domain=netbird.selfhosted"
-    ]
+      - netbird_caddy_data:/data
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500m"
+        max-file: "2"
 
-  # NetBird Dashboard (Web UI)
+  # UI dashboard
   dashboard:
-    image: netbirdio/dashboard:v0.47.2
-    container_name: netbird-dashboard
-    restart: always
-    depends_on:
-      - management
-    environment:
-      # Management API 端点配置
-      - NETBIRD_MGMT_API_ENDPOINT=http://management:33073
-      - NETBIRD_MGMT_GRPC_API_ENDPOINT=http://management:33073
-      
-      # 可选：SSL配置
-      - NGINX_SSL_PORT=443
-      - LETSENCRYPT_DOMAIN=your.domain.com
-      - LETSENCRYPT_EMAIL=admin@your.domain.com
-    ports:
-      - "8080:80"     # Dashboard HTTP端口
-    networks:
-      - netbird
+    image: netbirdio/dashboard:latest
+    restart: unless-stopped
+    networks: [netbird]
+    env_file:
+      - ./dashboard.env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500m"
+        max-file: "2"
 
-  # NetBird 信号服务
+  # Signal
   signal:
-    image: netbirdio/signal:v0.47.2
-    container_name: netbird-signal
-    restart: always
-    volumes:
-      - ./signal:/var/lib/netbird
-    ports:
-      - "10000:10000"  # Signal gRPC API
-    networks:
-      - netbird
+    image: netbirdio/signal:latest
+    restart: unless-stopped
+    networks: [netbird]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500m"
+        max-file: "2"
 
-  # NetBird 中继服务（用于 P2P 连接失败时的回退）
+  # Relay
   relay:
-    image: netbirdio/relay:v0.47.2
-    container_name: netbird-relay
-    restart: always
-    volumes:
-      - ./relay:/var/lib/netbird
-    ports:
-      - "33080:33080"  # Relay端口
-    networks:
-      - netbird
+    image: netbirdio/relay:latest
+    restart: unless-stopped
+    networks: [netbird]
+    env_file:
+      - ./relay.env
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500m"
+        max-file: "2"
 
-  # Coturn STUN/TURN 服务器（用于 NAT 穿透）
+  # Management
+  management:
+    image: netbirdio/management:latest
+    restart: unless-stopped
+    networks: [netbird]
+    volumes:
+      - netbird_management:/var/lib/netbird
+      - ./management.json:/etc/netbird/management.json
+    command: [
+      "--port", "80",
+      "--log-file", "console",
+      "--log-level", "info",
+      "--disable-anonymous-metrics=false",
+      "--single-account-mode-domain=netbird.selfhosted",
+      "--dns-domain=netbird.selfhosted",
+      "--idp-sign-key-refresh-enabled",
+    ]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500m"
+        max-file: "2"
+
+  # Coturn, AKA relay server
   coturn:
-    image: coturn/coturn:4.6.2-r3
-    container_name: netbird-coturn
-    restart: always
+    image: coturn/coturn
+    restart: unless-stopped
     volumes:
-      - ./turn:/var/lib/coturn
       - ./turnserver.conf:/etc/turnserver.conf:ro
-    ports:
-      - "3478:3478/udp"        # STUN/TURN端口
-      - "3478:3478/tcp"        # STUN/TURN端口
-      - "49152-65535:49152-65535/udp"  # 动态端口范围
-    networks:
-      - netbird
-    command: ["-c", "/etc/turnserver.conf"]
+    network_mode: host
+    command:
+      - -c /etc/turnserver.conf
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500m"
+        max-file: "2"
 
+  # Zitadel - identity provider
+  zitadel:
+    restart: 'always'
+    networks: [netbird]
+    image: 'ghcr.io/zitadel/zitadel:v2.64.1'
+    command: 'start-from-init --masterkeyFromEnv --tlsMode external'
+    env_file:
+      - ./zitadel.env
+    depends_on:
+      - zdb
+    volumes:
+      - ./machinekey:/machinekey
+      - netbird_zitadel_certs:/zdb-certs:ro
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500m"
+        max-file: "2"
+
+  # Postgres for Zitadel
+  zdb:
+    restart: 'always'
+    networks: [netbird]
+    image: 'postgres:16-alpine'
+    env_file:
+      - ./zdb.env
+    volumes:
+      - netbird_zdb_data:/var/lib/postgresql/data:rw
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-d", "db_prod"]
+      interval: 5s
+      timeout: 60s
+      retries: 10
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500m"
+        max-file: "2"
+
+# 持久化存储卷
+volumes:
+  netbird_zdb_data:
+  netbird_management:
+  netbird_caddy_data:
+  netbird_zitadel_certs:
+
+# 网络配置
 networks:
-  netbird:
-    driver: bridge 
+  netbird: 

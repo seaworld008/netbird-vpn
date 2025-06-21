@@ -1,0 +1,89 @@
+# NetBird Caddy 反向代理配置
+# 基于官方 getting-started-with-zitadel.sh 脚本
+
+{
+  debug
+	servers :80,:443 {
+    protocols h1 h2c h2 h3
+  }
+}
+
+# 安全头配置
+(security_headers) {
+    header * {
+        # enable HSTS
+        # https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html#strict-transport-security-hsts
+        # NOTE: Read carefully how this header works before using it.
+        # If the HSTS header is misconfigured or if there is a problem with
+        # the SSL/TLS certificate being used, legitimate users might be unable
+        # to access the website. For example, if the HSTS header is set to a
+        # very long duration and the SSL/TLS certificate expires or is revoked,
+        # legitimate users might be unable to access the website until
+        # the HSTS header duration has expired.
+        # The recommended value for the max-age is 2 year (63072000 seconds).
+        # But we are using 1 hour (3600 seconds) for testing purposes
+        # and ensure that the website is working properly before setting
+        # to two years.
+
+        Strict-Transport-Security "max-age=3600; includeSubDomains; preload"
+
+        # disable clients from sniffing the media type
+        # https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html#x-content-type-options
+        X-Content-Type-Options "nosniff"
+
+        # clickjacking protection
+        # https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html#x-frame-options
+        X-Frame-Options "SAMEORIGIN"
+
+        # xss protection
+        # https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html#x-xss-protection
+        X-XSS-Protection "1; mode=block"
+
+        # Remove -Server header, which is an information leak
+        # Remove Caddy from Headers
+        -Server
+
+        # keep referrer data off of HTTP connections
+        # https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html#referrer-policy
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+}
+
+# 主要配置：处理所有服务的路由
+:80, {$NETBIRD_DOMAIN}:443 {
+    import security_headers
+    
+    # NetBird Relay 服务
+    reverse_proxy /relay* relay:80
+    
+    # NetBird Signal 服务
+    reverse_proxy /signalexchange.SignalExchange/* h2c://signal:10000
+    
+    # NetBird Management API 和 gRPC
+    reverse_proxy /api/* management:80
+    reverse_proxy /management.ManagementService/* h2c://management:80
+    
+    # Zitadel 身份认证服务路由
+    reverse_proxy /zitadel.admin.v1.AdminService/* h2c://zitadel:8080
+    reverse_proxy /admin/v1/* h2c://zitadel:8080
+    reverse_proxy /zitadel.auth.v1.AuthService/* h2c://zitadel:8080
+    reverse_proxy /auth/v1/* h2c://zitadel:8080
+    reverse_proxy /zitadel.management.v1.ManagementService/* h2c://zitadel:8080
+    reverse_proxy /management/v1/* h2c://zitadel:8080
+    reverse_proxy /zitadel.system.v1.SystemService/* h2c://zitadel:8080
+    reverse_proxy /system/v1/* h2c://zitadel:8080
+    reverse_proxy /assets/v1/* h2c://zitadel:8080
+    reverse_proxy /ui/* h2c://zitadel:8080
+    reverse_proxy /oidc/v1/* h2c://zitadel:8080
+    reverse_proxy /saml/v2/* h2c://zitadel:8080
+    reverse_proxy /oauth/v2/* h2c://zitadel:8080
+    reverse_proxy /.well-known/openid-configuration h2c://zitadel:8080
+    reverse_proxy /openapi/* h2c://zitadel:8080
+    reverse_proxy /debug/* h2c://zitadel:8080
+    reverse_proxy /device/* h2c://zitadel:8080
+    reverse_proxy /device h2c://zitadel:8080
+    reverse_proxy /zitadel.user.v2.UserService/* h2c://zitadel:8080
+    
+    # NetBird Dashboard (默认路由，放在最后)
+    reverse_proxy /* dashboard:80
+} 
