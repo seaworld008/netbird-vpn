@@ -31,11 +31,14 @@
 根据官方文档，需要开放以下端口：
 
 **TCP 端口:**
-- `80` - HTTP (Let's Encrypt验证和重定向)
-- `443` - HTTPS (主要访问端口)
-- `33073` - Management gRPC (可选，通过Caddy代理)
-- `10000` - Signal gRPC (可选，通过Caddy代理)  
-- `33080` - Management HTTP (可选，通过Caddy代理)
+| 序号 | 服务 | 协议 | 端口范围 | 授权对象 | 说明 |
+|------|------|------|----------|----------|------|
+| 1 | HTTP | TCP | 80/80 | 0.0.0.0/0 | Let's Encrypt验证和重定向 |
+| 2 | HTTPS | TCP | 443/443 | 0.0.0.0/0 | 主要访问端口 |
+| 3 | HTTP/3 | UDP | 443/443 | 0.0.0.0/0 | QUIC支持 |
+| 4 | STUN/TURN | UDP | 3478/3478 | 0.0.0.0/0 | NAT穿透协商 |
+| 5 | TURN TCP | TCP | 3478/3478 | 0.0.0.0/0 | TCP fallback |
+| 6 | TURN中继 | UDP | 49152/65535 | 0.0.0.0/0 | 中继端口范围 |
 
 **UDP 端口:**
 - `3478` - STUN/TURN协商
@@ -88,18 +91,18 @@ https://app.netbird.io/install
 
 ### 查看服务状态
 ```bash
-docker compose ps
+docker-compose ps
 ```
 
 ### 查看服务日志
 ```bash
 # 查看所有服务日志
-docker compose logs -f
+docker-compose logs -f
 
 # 查看特定服务日志
-docker compose logs -f management
-docker compose logs -f dashboard
-docker compose logs -f caddy
+docker-compose logs -f management
+docker-compose logs -f dashboard
+docker-compose logs -f caddy
 ```
 
 ### 备份配置
@@ -112,9 +115,9 @@ cp docker-compose.yml Caddyfile zitadel.env dashboard.env turnserver.conf manage
 
 备份数据库：
 ```bash
-docker compose stop management
-docker compose cp -a management:/var/lib/netbird/ backup/
-docker compose start management
+docker-compose stop management
+docker-compose cp -a management:/var/lib/netbird/ backup/
+docker-compose start management
 ```
 
 ### 升级系统
@@ -123,17 +126,17 @@ docker compose start management
 # 1. 备份配置和数据（见上方备份步骤）
 
 # 2. 拉取最新镜像
-docker compose pull management dashboard signal relay
+docker-compose pull management dashboard signal relay
 
 # 3. 重启服务
-docker compose up -d --force-recreate management dashboard signal relay
+docker-compose up -d --force-recreate management dashboard signal relay
 ```
 
 ### 完全卸载
 
 ```bash
 # 停止并删除所有容器和数据卷
-docker compose down --volumes
+docker-compose down --volumes
 
 # 删除配置文件
 rm -f docker-compose.yml Caddyfile zitadel.env dashboard.env machinekey/zitadel-admin-sa.token turnserver.conf management.json relay.env zdb.env
@@ -164,8 +167,8 @@ sudo ufw enable
 | 2 | HTTPS | TCP | 443/443 | 0.0.0.0/0 | 主要访问端口 |
 | 3 | HTTP/3 | UDP | 443/443 | 0.0.0.0/0 | QUIC支持 |
 | 4 | STUN/TURN | UDP | 3478/3478 | 0.0.0.0/0 | NAT穿透协商 |
-| 5 | TURN中继 | UDP | 49152/65535 | 0.0.0.0/0 | 中继端口范围 |
-| 6 | TURN TCP | TCP | 3478/3478 | 0.0.0.0/0 | TCP fallback |
+| 5 | TURN TCP | TCP | 3478/3478 | 0.0.0.0/0 | TCP fallback |
+| 6 | TURN中继 | UDP | 49152/65535 | 0.0.0.0/0 | 中继端口范围 |
 | 7 | Caddy管理 | TCP | 8080/8080 | 你的IP | 管理接口（限制访问） |
 
 ## 📁 项目文件说明
