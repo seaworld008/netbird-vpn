@@ -48,7 +48,7 @@
 
 ## 🚀 快速部署
 
-### 1. 设置域名
+### 1. 设置域名(必须使用域名，并且请提前解析好这个域名，A记录指向这台主机的公网IP)
 ```bash
 # 替换为你的实际域名
 export NETBIRD_DOMAIN=netbird.example.com
@@ -56,10 +56,11 @@ export NETBIRD_DOMAIN=netbird.example.com
 
 ### 2. 执行官方部署脚本
 ```bash
-# 方式一：直接执行官方脚本
-curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting-started-with-zitadel.sh | bash
+# 方式一：直接执行官方脚本（推荐，记得替换自己的域名）
+export NETBIRD_DOMAIN=netbird.example.com && curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting-started-with-zitadel.sh | bash
 
-# 方式二：使用本项目的部署脚本（推荐）
+# 方式二：使用本项目的部署脚本
+export NETBIRD_DOMAIN=netbird.example.com
 chmod +x deploy.sh
 ./deploy.sh
 ```
