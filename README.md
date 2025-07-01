@@ -198,7 +198,7 @@ netbird-deployment/
 1. **无法访问管理界面**
    - 检查域名解析是否正确
    - 确认防火墙端口已开放
-   - 查看 Caddy 日志：`docker compose logs caddy`
+   - 查看 Caddy 日志：`docker-compose logs caddy`
 
 2. **SSL 证书申请失败**
    - 确认域名解析到正确IP
