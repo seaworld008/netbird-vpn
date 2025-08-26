@@ -59,7 +59,7 @@ export NETBIRD_DOMAIN=netbird.example.com
 # 方式一：直接执行官方脚本（推荐，记得替换自己的域名，并在安全组开启上面的UDP和TCP的端口）
 export NETBIRD_DOMAIN=netbird.example.com && curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting-started-with-zitadel.sh | bash
 
-# 方式二：使用本项目的部署脚本
+# 方式二：使用本项目的部署脚本（不推荐！此脚本可能不具备实时更新，尽量用上面的官方脚本）
 export NETBIRD_DOMAIN=netbird.example.com
 chmod +x deploy.sh
 ./deploy.sh
