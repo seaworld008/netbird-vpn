@@ -35,7 +35,9 @@ curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting
 ## 4. 首次登录
 
 - Dashboard：`https://netbird.example.com`
-- 首次管理员账号信息一般会在终端输出并写入 `.env`（请立即修改默认密码）
+- 新版官方主线默认不会在终端输出管理员密码
+- 首次访问时会进入 `/setup`
+- 在 `/setup` 页面创建第一个管理员账号和密码
 
 ## 5. 服务器端只改配置的三步
 
@@ -61,11 +63,12 @@ docker compose up -d
 
 ## 6. 与旧模板的关系
 
-本仓库里的 `docker-compose.yml` / `Caddyfile` / `*.template` 主要用于
-- 兼容路径对照
-- 运维历史记录
+本仓库已经移除了 legacy 配置模板。
 
-新建环境请以官方脚本生成结果为准。
+当前原则是：
+
+- 新建环境完全以官方脚本生成结果为准
+- 本仓库只负责解释这些配置文件如何修改和如何用于实际场景
 
 ## 7. 参考
 

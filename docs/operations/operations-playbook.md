@@ -22,8 +22,14 @@ cp proxy.env caddyfile-netbird.txt nginx-netbird.conf npm-advanced-config.txt ba
 ### 数据备份
 
 ```bash
-# 示例：备份 NetBird 主数据卷（SQLite、密钥、状态）
-docker run --rm -v netbird_data:/backup busybox tar czf - /backup > backup/$(date +%Y%m%d)/netbird_data.tgz
+# 先找真实卷名
+docker volume ls | grep netbird
+
+# 备份 NetBird 主数据卷（把 <actual_netbird_data_volume> 换成上一步查到的卷名）
+docker run --rm -v <actual_netbird_data_volume>:/backup busybox tar czf - /backup > backup/$(date +%Y%m%d)/netbird_data.tgz
+
+# 如果你使用的是内置 Traefik，也建议备份证书卷
+docker run --rm -v <actual_traefik_letsencrypt_volume>:/backup busybox tar czf - /backup > backup/$(date +%Y%m%d)/traefik_letsencrypt.tgz
 ```
 
 ## 3. 升级
