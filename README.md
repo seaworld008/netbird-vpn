@@ -6,8 +6,8 @@
 ## 一、仓库定位
 
 - **推荐路径（最新）**：基于 `getting-started.sh`，适配 NetBird 近期版本（含本地用户能力）。
-- **兼容路径（历史）**：基于 `getting-started-with-zitadel.sh`，用于已有 Zitadel 体系的续航。
-- **现状说明**：本仓库根目录文件 `docker-compose.yml` / `Caddyfile` / `.template` 仍是历史产物，适合做运维对照；本地标准流程是执行官方脚本生成基线，再只改配置文件，不维护自定义安装脚本。
+- **部署标准**：服务端统一采用 `docker-compose`；本仓库不再保留 legacy 配置模板，不维护本地安装脚本。
+- **变更原则**：执行官方脚本生成基线文件，然后只改配置文件。
 
 ## 二、先说结论：当前 README 旧步骤是否已过期？
 
@@ -41,35 +41,19 @@ https://netbird.example.com
 https://docs.netbird.io/get-started/install
 ```
 
-## 四、仍要用 Zitadel 的场景
-
-如果你有既有 Zitadel 统一身份体系，按以下方式执行历史兼容流程：
-
-```bash
-export NETBIRD_DOMAIN=netbird.example.com
-curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting-started-with-zitadel.sh | bash
-```
-
-```text
-注意：默认不依赖本地 install script，直接执行官方脚本并按流程编辑配置。
-```
-
-## 五、仓库结构（建议阅读顺序）
+## 四、仓库结构（建议阅读顺序）
 
 ```text
 .
 ├── README.md                         # 主文档（快速定位）
-├── 部署说明.md                       # 原始快速说明（已改为兼容入口）
-├── deploy.sh（不推荐）               # 兼容/迁移场景备用脚本
-├── docker-compose.yml                 # 兼容版模板（历史基线）
-├── Caddyfile
-├── *.env.template / *.conf
+├── 部署说明.md                       # 快速部署与入口说明
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── SECURITY.md
 ├── docs/
 │   ├── selfhosted/
 │   │   ├── quickstart-modern.md       # 官方推荐安装与参数核对
 │   │   ├── docker-compose-config-cheatsheet.md # 配置文件速查（非脚本）
-│   │   ├── legacy-zitadel-path.md     # 历史兼容说明与迁移建议
-│   │   └── combined-container-migration-checklist.md # 合并容器迁移检查清单
 │   ├── cases/
 │   │   ├── 01-openvpn-replacement.md
 │   │   ├── 02-whitelisted-system-access.md
@@ -80,16 +64,13 @@ curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting
 │   └── operations/
 │       ├── firewall-and-hardening.md
 │       └── operations-playbook.md
-└── 部署说明.md                        # 快速中文入口，保持历史兼容
 ```
 
-## 六、你要的“跳转入口”（先读哪个）
+## 五、你要的“跳转入口”（先读哪个）
 
 ### 部署链路
 
 - [官方推荐一体化部署说明（新手推荐）](docs/selfhosted/quickstart-modern.md)
-- [Zitadel 兼容路径说明](docs/selfhosted/legacy-zitadel-path.md)
-- [legacy 到合并容器迁移检查清单](docs/selfhosted/combined-container-migration-checklist.md)
 - [服务器端配置速查（无脚本化）](docs/selfhosted/docker-compose-config-cheatsheet.md)
 
 ### 场景实践（可直接放给他人）
@@ -103,10 +84,10 @@ curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting
 
 ### 运维
 
-- [防火墙与加固清单](docs/operations/firewall-and-hardening.md)
+- [阿里云安全组与端口说明](docs/operations/firewall-and-hardening.md)
 - [日常运维与故障排查（备份/回滚/升级）](docs/operations/operations-playbook.md)
 
-## 七、基础端口与网络基线
+## 六、基础端口与网络基线
 
 | 协议 | 端口 | 场景 |
 | --- | --- | --- |
@@ -117,6 +98,31 @@ curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting
 
 > 新版主线默认最少只需开放 TCP 80、TCP 443、UDP 3478；管理端口务必来源白名单。
 
+## 七、阿里云安全组怎么配
+
+如果你的服务器在阿里云，最少按下面几条入方向规则放行：
+
+| 方向 | 协议 | 端口范围 | 授权对象 | 作用 |
+| --- | --- | --- | --- | --- |
+| 入方向 | TCP | 80/80 | `0.0.0.0/0` | 证书签发、HTTP 跳转 |
+| 入方向 | TCP | 443/443 | `0.0.0.0/0` | Dashboard 和管理入口 |
+| 入方向 | UDP | 3478/3478 | `0.0.0.0/0` | STUN，帮助客户端做 NAT 探测 |
+| 入方向 | UDP | 443/443 | `0.0.0.0/0` | 可选，仅当你启用了 HTTP/3 |
+
+阿里云控制台填写建议：
+
+1. 安全组类型选择“入方向”。
+2. 授权策略选择“允许”。
+3. 优先级可统一填 `1` 或更小的高优先级值。
+4. 授权对象公网开放时填 `0.0.0.0/0`；如果是办公网白名单，就改成你的固定出口 IP 或 CIDR。
+5. 备注里直接写端口用途，例如 `NetBird HTTPS`、`NetBird STUN`，后续排障更容易。
+
+新手最容易犯的错误：
+
+- 只开放了 `443/tcp`，忘了 `3478/udp`，结果客户端经常连不上或 NAT 打洞异常。
+- 域名已经解析，但 `80/tcp` 没开放，导致证书申请失败。
+- 把安全组配好了，但服务器本机 `ufw` / `firewalld` 还在拦截。
+
 ## 八、官方资源索引
 
 - 官方文档首页：https://docs.netbird.io/
@@ -125,13 +131,12 @@ curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting
 - 自建反向代理说明（官方）：https://docs.netbird.io/selfhosted/reverse-proxy
 - 配置文件参考（新部署）：https://docs.netbird.io/selfhosted/configuration-files
 - 本地身份管理说明（内置 IdP）：https://docs.netbird.io/selfhosted/identity-providers/local
-- 合并容器迁移指南：https://docs.netbird.io/selfhosted/migration/combined-container
 - 访问控制文档（官方）：https://docs.netbird.io/manage/access-control/manage-network-access
 - 路由网络访问限制（官方）：https://docs.netbird.io/manage/networks/accessing-restricted-domain-resources
 
 ## 九、快速对外发布建议
 
-1. 保留本仓库的根目录兼容产物做迁移对照；新用户默认只看 `docs/selfhosted/quickstart-modern.md`。
+1. 新用户默认只看 `docs/selfhosted/quickstart-modern.md`。
 2. 每个场景文档都给出：
    - 前置条件
    - 拓扑图（文字图）
@@ -150,22 +155,10 @@ curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting
 - 版本与变更记录：[CHANGELOG.md](./CHANGELOG.md)
 - 文档目录索引：[docs/README.md](./docs/README.md)
 
-建议将本仓库以 `docs/` 为主入口，根目录文件只保留“入口+兼容历史”，其余实践统一沉淀到 `docs/`。
+建议将本仓库以 `docs/` 为主入口，根目录文件只保留入口和治理文档，其余实践统一沉淀到 `docs/`。
 
-## 十一、从 legacy 到现代部署的迁移建议（可直接交付给架构组）
-
-- 明确环境属性：新建环境默认按 `getting-started.sh`；已有 Zitadel 环境按运维窗口择机迁移。
-- 先做兼容矩阵验证：端口、DNS、策略、路由是否一致。
-- 迁移建议顺序：
-  1. 先复制旧环境配置清单（compose/network/tls）
-  2. 在测试环境跑一条新链路
-  3. 验证路由、访问控制、客户端连接
-  4. 业务切流后再做正式切换
-- 遇到兼容问题优先按文档中的 legacy 路径执行回滚，不要直接回退到未记录状态。
-
-## 十二、官方能力核对（以避免版本偏差）
+## 十一、官方能力核对（以避免版本偏差）
 
 - 反向代理功能：自托管环境建议优先使用 Traefik 场景，且需确保 `getting-started.sh` 与反向代理能力匹配。
-- 新版自建默认会生成 `docker-compose.yml`、`config.yaml`、`dashboard.env`，并按反向代理选项生成额外模板文件；这与旧版的 `management.json` / `relay.env` / `turnserver.conf` 不同。
-- 合并容器与历史拆分部署并非完全等价，建议只在新环境采用官方新链路，历史环境保留兼容文档。
+- 新版自建默认会生成 `docker-compose.yml`、`config.yaml`、`dashboard.env`，并按反向代理选项生成额外模板文件。
 - Reverse Proxy、Expose、Browser Client 等能力请始终以官方文档和 release note 为准。
