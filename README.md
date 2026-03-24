@@ -16,6 +16,14 @@
 
 ### 1. 准备域名
 
+NetBird 自建主线部署必须使用公网域名。
+
+要求：
+
+- 域名必须能解析到你的服务器公网 IP
+- 官方自建 Quickstart 以域名为前提，不适合“只有公网 IP、没有域名”的场景
+- 如果你在中国大陆面向公网使用，建议使用已备案域名，否则 HTTPS 证书签发和访问链路可能失败
+
 ```bash
 export NETBIRD_DOMAIN=netbird.example.com
 ```
@@ -112,7 +120,22 @@ NetBird 主线部署里，最常用的对外端口如下：
 
 - [阿里云安全组与端口说明](docs/operations/firewall-and-hardening.md)
 
-## 六、仓库结构
+## 六、域名要求
+
+这是自建主线里最容易被忽略的一点：
+
+- 你必须准备一个公网域名
+- 这个域名必须提前解析到服务器公网 IP
+- 如果没有域名，官方 Quickstart 主线通常无法正常完成 TLS 和 Web 登录链路
+
+如果你在中国大陆使用：
+
+- 建议直接使用已备案域名
+- 否则即使服务启动，外部用户访问也可能因为域名或证书链路问题而不稳定
+
+这不是为了“写得规范”，而是为了让控制台、认证、HTTPS 和后续场景文档都能稳定工作
+
+## 七、仓库结构
 
 ```text
 .
@@ -137,7 +160,7 @@ NetBird 主线部署里，最常用的对外端口如下：
         └── operations-playbook.md
 ```
 
-## 七、官方文档入口
+## 八、官方文档入口
 
 - 官方文档首页：https://docs.netbird.io/
 - 官方客户端安装入口：https://docs.netbird.io/get-started/install
@@ -148,7 +171,7 @@ NetBird 主线部署里，最常用的对外端口如下：
 - 访问控制文档：https://docs.netbird.io/manage/access-control/manage-network-access
 - 路由网络访问限制：https://docs.netbird.io/manage/networks/accessing-restricted-domain-resources
 
-## 八、仓库说明
+## 九、仓库说明
 
 - [文档目录索引](docs/README.md)
 - [开源协作说明](CONTRIBUTING.md)
