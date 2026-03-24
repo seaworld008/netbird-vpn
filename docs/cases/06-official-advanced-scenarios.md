@@ -1,53 +1,177 @@
-# 案例六：官方推荐场景清单（可直接拼成团队规范）
+# 案例六：官方推荐的高级最佳实践合集
 
-以下内容作为团队“可持续运营模板”，适配多数企业。
+> 这一篇不是单一场景，而是把最值得做、最容易提升稳定性和安全性的 4 组实践放在一起。
+> 每一组都给出适合团队直接落地的说明。
 
-## 1. 分组与策略优先级模型
+## 1. 最佳实践一：按“人组 + 资源组 + 端口”建策略
 
-- 先定义组：`role-dev`、`role-ops`、`role-sec`
-- 先定义资源组：`db-subnet`、`jump-host`、`prod-api`
-- 默认拒绝策略
-- 再添加白名单策略（端口 + 协议）
+### 1.1 架构图
 
-## 2. 网络命名与 DNS
+```mermaid
+flowchart LR
+    DEV["developers"] --> ACL["NetBird Access Policy"]
+    OPS["ops"] --> ACL
+    SEC["security"] --> ACL
+    ACL --> APP["prod-api\n10.50.10.20:443"]
+    ACL --> DB["prod-db\n10.50.20.15:5432"]
+    ACL --> SSH["bastion\n10.50.30.10:22"]
+```
 
-- 对关键私网资源启用 DNS alias（如 `jump.internal.example.com`）
-- 建议 DNS/命名集中管理，减少运维记忆负担
+### 1.2 推荐分组
 
-## 3. 姿态检查（Posture）
+用户组：
 
-- 在关键组开启 posture checks：
-  - 系统补丁状态
-  - 系统是否加固（按组织要求）
-  - 客户端版本
-- 不通过检查的端点只允许登陆但不给予高风险网络权限（按策略支持）
+- `developers`
+- `ops`
+- `security`
 
-## 4. 多点管理策略
+资源组：
 
-- 小组织：先用一套 Setup Key 管理
-- 中大型组织：按团队/环境生成 scoped setup key（按有效期与用途）
+- `prod-api-group`
+- `prod-db-group`
+- `bastion-group`
 
-## 5. 客户端安全与治理
+### 1.3 推荐策略
 
-- 定期清理离职账号
-- 未启用设备自动失活机制的团队需手工审计
-- 统一客户端版本策略（兼容性检查）
+| 源组 | 目标组 | 协议 | 端口 |
+| --- | --- | --- | --- |
+| `developers` | `prod-api-group` | TCP | `443` |
+| `ops` | `bastion-group` | TCP | `22` |
+| `security` | `prod-api-group` | TCP | `443` |
+| `security` | `prod-db-group` | TCP | `5432` |
 
-## 6. 推荐排障顺序（5 步）
+原则：
 
-1. DNS 与端口
-2. 凭证与策略是否过期
-3. 节点端证书是否可续期
-4. 访问控制是否命中拒绝策略
-5. 重新生成/重发 Setup Key
+- 不要直接放大网段
+- 不要把资源都塞进 `All`
+- 不要把 `SSH`、`DB`、`Web` 混在一条大策略里
 
-## 7. 与 OpenVPN 生态兼容迁移建议
+## 2. 最佳实践二：用 Domain Resource 替代难记 IP
 
-- 逐渐切换到 NetBird 组策略，减少“全网放行”模式
-- 保留传统 VPN 作为备用，仅在迁移窗口打开
+### 2.1 架构图
 
-## 8. 文档来源建议
+```mermaid
+flowchart LR
+    U["开发者笔记本"] --> DNS["NetBird Local DNS Forwarder"]
+    DNS --> RP["Routing Peer"]
+    RP --> APP["gitlab.corp.internal\n10.60.10.20"]
+```
 
-- NetBird 官方网盘访问控制/路由文档
-- NetBird 社区 issue 与变更讨论
-- 定期补齐“本仓库变更日志（CHANGELOG）”和“运维动作清单”
+### 2.2 适用场景
+
+- 内部系统有固定域名
+- 证书校验依赖域名
+- 不想让用户记 IP
+
+### 2.3 示例
+
+把这些域名做成资源：
+
+- `gitlab.corp.internal`
+- `jenkins.corp.internal`
+- `grafana.corp.internal`
+
+好处：
+
+- 浏览器证书体验更好
+- 不会因为 IP 变化导致培训文档失效
+
+### 2.4 注意事项
+
+- 路由节点必须能解析这些域名
+- 如果使用 wildcard domain，要确保官方要求的能力已开启
+
+## 3. 最佳实践三：给服务器和容器统一发 Setup Key
+
+### 3.1 架构图
+
+```mermaid
+flowchart LR
+    MGMT["NetBird Dashboard"] --> KEY["Setup Key"]
+    KEY --> VM1["app-server-01"]
+    KEY --> VM2["db-gateway-01"]
+    KEY --> CT["container-job-01"]
+```
+
+### 3.2 适用场景
+
+- 新服务器频繁创建
+- IaC / 自动化部署较多
+- 不想每台机器都手工扫码登录
+
+### 3.3 推荐方式
+
+为不同用途创建不同 Setup Key：
+
+| Key 名称 | 用途 |
+| --- | --- |
+| `nb-dev-servers` | 开发服务器 |
+| `nb-prod-routing-peers` | 生产路由节点 |
+| `nb-ci-runners` | CI Runner |
+
+示例：
+
+```bash
+sudo netbird up \
+  --management-url https://netbird.example.com \
+  --setup-key NBSETUP-PROD-ROUTER-REPLACE-ME
+```
+
+### 3.4 安全建议
+
+- 给 Setup Key 设置过期时间
+- 不同环境不要共用同一个 Key
+- 路由节点使用专用 Key
+
+## 4. 最佳实践四：路线冲突和重叠网段预防
+
+### 4.1 架构图
+
+```mermaid
+flowchart LR
+    Laptop["开发者笔记本\n本地 Wi-Fi: 10.10.0.0/16"] --> Conflict["路由冲突"]
+    Conflict --> Cloud["AWS VPC\n10.10.0.0/16"]
+```
+
+### 4.2 为什么这是大坑
+
+如果你的本地网络和远端网络都叫：
+
+```text
+10.10.0.0/16
+```
+
+那客户端会不知道该走本地还是走 NetBird。
+
+### 4.3 解决建议
+
+上线前就做网段盘点：
+
+| 网络 | CIDR |
+| --- | --- |
+| 办公网 | `10.1.0.0/16` |
+| AWS 生产 | `10.10.0.0/16` |
+| GCP 数据 | `172.16.0.0/16` |
+| Azure 办公网 | `192.168.10.0/24` |
+
+如果已经重叠：
+
+- 优先调整新环境 CIDR
+- 无法调整时，再用 NetBird 官方的 overlap route 选择能力处理
+
+## 5. 给团队的最终落地建议
+
+如果你希望这个仓库真正能指导别人落地，推荐团队内部先统一以下约定：
+
+1. 所有资源必须先分组，再建策略。
+2. 所有服务器接入尽量用 Setup Key，不要人工逐台登录。
+3. 能用域名资源就尽量不用裸 IP。
+4. 所有新网络上线前先做 CIDR 冲突检查。
+
+## 6. 官方参考
+
+- Access Control Overview: [NetBird Docs](https://docs.netbird.io/manage/access-control)
+- Manage Network Access: [NetBird Docs](https://docs.netbird.io/manage/access-control/manage-network-access)
+- Networks: [NetBird Docs](https://docs.netbird.io/how-to/networks)
+- Setup Keys: [NetBird Docs](https://docs.netbird.io/manage/peers/register-machines-using-setup-keys)
+- Resolve Overlapping Routes: [NetBird Docs](https://docs.netbird.io/how-to/resolve-overlapping-routes)
