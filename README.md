@@ -12,7 +12,30 @@
 - 服务端部署方式统一按 `docker-compose`
 - 文档重点放在“配置说明 + 场景落地 + 运维说明”
 
-## 一、快速开始
+## 一、推荐阅读顺序
+
+如果你是第一次打开这个仓库，建议直接从这里开始：
+
+### 部署
+
+- [官方部署说明（新手优先）](docs/selfhosted/quickstart-modern.md)
+- [服务器端配置速查](docs/selfhosted/docker-compose-config-cheatsheet.md)
+
+### 场景案例
+
+- [案例 1：用 NetBird 替代 OpenVPN](docs/cases/01-openvpn-replacement.md)
+- [案例 2：企业内网白名单系统接入](docs/cases/02-whitelisted-system-access.md)
+- [案例 3：本地办公打通云上 K8S 集群网络](docs/cases/03-kubernetes-connectivity.md)
+- [案例 4：统一出口与代理发布入口](docs/cases/04-exit-node-and-proxy.md)
+- [案例 5：打通多云内网](docs/cases/05-multi-cloud-connectivity.md)
+- [案例 6：官方推荐的高级最佳实践合集](docs/cases/06-official-advanced-scenarios.md)
+
+### 运维
+
+- [阿里云安全组与端口说明](docs/operations/firewall-and-hardening.md)
+- [日常运维与故障排查](docs/operations/operations-playbook.md)
+
+## 二、快速开始
 
 ### 1. 准备域名
 
@@ -48,7 +71,7 @@ https://netbird.example.com
 https://docs.netbird.io/get-started/install
 ```
 
-## 二、这个仓库能帮你什么
+## 三、这个仓库能帮你什么
 
 如果你已经按官方脚本完成部署，这个仓库主要帮你补齐下面这些内容：
 
@@ -59,27 +82,6 @@ https://docs.netbird.io/get-started/install
 - K8S 集群、Pod 网段、本地办公网络怎么打通
 - 多云内网互通怎么落地
 - Exit Node 和 Reverse Proxy 这些能力什么时候用、怎么配
-
-## 三、推荐阅读顺序
-
-### 部署
-
-- [官方部署说明（新手优先）](docs/selfhosted/quickstart-modern.md)
-- [服务器端配置速查](docs/selfhosted/docker-compose-config-cheatsheet.md)
-
-### 场景案例
-
-- [案例 1：用 NetBird 替代 OpenVPN](docs/cases/01-openvpn-replacement.md)
-- [案例 2：企业内网白名单系统接入](docs/cases/02-whitelisted-system-access.md)
-- [案例 3：本地办公打通云上 K8S 集群网络](docs/cases/03-kubernetes-connectivity.md)
-- [案例 4：统一出口与代理发布入口](docs/cases/04-exit-node-and-proxy.md)
-- [案例 5：打通多云内网](docs/cases/05-multi-cloud-connectivity.md)
-- [案例 6：官方推荐的高级最佳实践合集](docs/cases/06-official-advanced-scenarios.md)
-
-### 运维
-
-- [阿里云安全组与端口说明](docs/operations/firewall-and-hardening.md)
-- [日常运维与故障排查](docs/operations/operations-playbook.md)
 
 ## 四、基础端口说明
 
