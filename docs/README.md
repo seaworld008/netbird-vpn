@@ -14,10 +14,27 @@
   - `04-exit-node-and-proxy.md`：Exit Node、Reverse Proxy、`netbird expose` 临时发布
   - `05-multi-cloud-connectivity.md`：AWS / GCP / Azure 多云互通、云防火墙、分阶段验证
   - `06-official-advanced-scenarios.md`：进阶最佳实践，含策略模型、域名资源、Setup Key、高可用和审计模板
+  - `07-identity-provider-and-mfa.md`：本地用户、外部 IdP、MFA、组同步、离职回收
+  - `08-device-posture-and-zero-trust.md`：Posture Checks、客户端版本、系统、网络范围、进程检查
+  - `09-automation-with-setup-keys.md`：Cloud-init、Ansible、Terraform、CI Runner 自动接入
+  - `10-managed-kubernetes-clouds.md`：ACK、EKS、GKE、AKS 托管 K8S 差异和检查点
 
 - `operations/`
   - `firewall-and-hardening.md`：阿里云安全组、端口与安全加固
   - `operations-playbook.md`：日常运维、备份、升级、回滚与排障 SOP
+  - `monitoring-and-audit.md`：服务端、路由节点、客户端巡检、审计与告警建议
+  - `disaster-recovery-drill.md`：备份恢复演练、跨主机恢复、DNS 切换和 RPO/RTO
+
+- `maintenance/`
+  - `upstream-upgrade-workflow.md`：跟踪 NetBird 官方升级、评估影响、同步文档的标准流程
+  - `documentation-governance.md`：文档分层、质量标准、完成定义和审查重点
+  - `roadmap.md`：持续演进路线图、维护节奏、backlog 和升级观察点
+
+- `decisions/`
+  - `ADR-001-documentation-operating-model.md`：文档运营模型的长期决策记录
+
+- `templates/`
+  - `case-template.md`：新增场景文档时使用的标准模板
 
 建议按以下顺序阅读：
 
@@ -26,3 +43,4 @@
 3. `selfhosted/docker-compose-config-cheatsheet.md`
 4. `cases/*`（按业务场景）
 5. `operations/*`
+6. `maintenance/*`

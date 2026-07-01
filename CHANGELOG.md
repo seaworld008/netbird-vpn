@@ -8,6 +8,10 @@
 - 更新 `docs/selfhosted/upstream-version-status.md`，集中说明官方 release、上游 HEAD、RC 标签和 `v0.73` 系列升级注意点
 - 增补 Docker Compose 配置修改 SOP，覆盖备份、域名、端口、重启验证和回滚步骤
 - 增补运维排障 SOP 与路由节点安全组说明
+- 新增 `AGENTS.md`，为后续 AI agent 和维护者提供仓库定位、升级流程、文档规范和校验命令
+- 新增维护文档、场景模板与 `scripts/validate-docs.sh`，支持持续升级和文档质量校验
+- 新增身份源/MFA、设备姿态、Setup Key 自动化、托管 K8S 云厂商 4 个进阶场景文档
+- 新增监控审计、灾备恢复演练、持续演进路线图与 ADR 决策记录
 - 移除仓库中的 legacy 配置模板与 legacy 文档入口
 - 新增场景化实践手册与运维 Playbook
 - 增加安全、贡献与版本维护规范文件

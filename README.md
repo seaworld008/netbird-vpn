@@ -34,11 +34,26 @@
 - [案例 4：统一出口与代理发布入口](docs/cases/04-exit-node-and-proxy.md)：Exit Node、Reverse Proxy、临时 expose
 - [案例 5：打通多云内网](docs/cases/05-multi-cloud-connectivity.md)：AWS / GCP / Azure 互通
 - [案例 6：NetBird 进阶最佳实践手册](docs/cases/06-official-advanced-scenarios.md)：策略、域名、Setup Key、高可用、审计
+- [案例 7：身份源、用户生命周期与 MFA](docs/cases/07-identity-provider-and-mfa.md)：本地用户、企业 IdP、组同步、离职回收
+- [案例 8：设备姿态检查与 Zero Trust](docs/cases/08-device-posture-and-zero-trust.md)：客户端版本、系统、网络、进程检查
+- [案例 9：Setup Key 自动化接入](docs/cases/09-automation-with-setup-keys.md)：Cloud-init、Ansible、Terraform、CI Runner
+- [案例 10：托管 K8S 云厂商专项](docs/cases/10-managed-kubernetes-clouds.md)：ACK、EKS、GKE、AKS 落地差异
 
 ### 运维
 
 - [阿里云安全组与端口说明](docs/operations/firewall-and-hardening.md)
 - [日常运维与故障排查](docs/operations/operations-playbook.md)
+- [监控、审计与持续巡检](docs/operations/monitoring-and-audit.md)
+- [自建 NetBird 灾备与恢复演练](docs/operations/disaster-recovery-drill.md)
+
+### 持续维护
+
+- [NetBird 上游升级跟踪与兼容维护流程](docs/maintenance/upstream-upgrade-workflow.md)
+- [文档治理与质量标准](docs/maintenance/documentation-governance.md)
+- [NetBird 文档持续演进路线图](docs/maintenance/roadmap.md)
+- [新增场景文档模板](docs/templates/case-template.md)
+- [文档运营模型决策记录](docs/decisions/ADR-001-documentation-operating-model.md)
+- [AI Agent 维护说明](AGENTS.md)
 
 ## 二、快速开始
 
@@ -153,6 +168,9 @@ NetBird 主线部署里，最常用的对外端口如下：
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── SECURITY.md
+├── AGENTS.md
+├── scripts/
+│   └── validate-docs.sh
 └── docs/
     ├── selfhosted/
     │   ├── quickstart-modern.md
@@ -164,10 +182,24 @@ NetBird 主线部署里，最常用的对外端口如下：
     │   ├── 03-kubernetes-connectivity.md
     │   ├── 04-exit-node-and-proxy.md
     │   ├── 05-multi-cloud-connectivity.md
-    │   └── 06-official-advanced-scenarios.md
-    └── operations/
-        ├── firewall-and-hardening.md
-        └── operations-playbook.md
+    │   ├── 06-official-advanced-scenarios.md
+    │   ├── 07-identity-provider-and-mfa.md
+    │   ├── 08-device-posture-and-zero-trust.md
+    │   ├── 09-automation-with-setup-keys.md
+    │   └── 10-managed-kubernetes-clouds.md
+    ├── operations/
+    │   ├── firewall-and-hardening.md
+    │   ├── operations-playbook.md
+    │   ├── monitoring-and-audit.md
+    │   └── disaster-recovery-drill.md
+    ├── maintenance/
+    │   ├── upstream-upgrade-workflow.md
+    │   ├── documentation-governance.md
+    │   └── roadmap.md
+    ├── decisions/
+    │   └── ADR-001-documentation-operating-model.md
+    └── templates/
+        └── case-template.md
 ```
 
 ## 八、官方文档入口
@@ -179,6 +211,9 @@ NetBird 主线部署里，最常用的对外端口如下：
 - 配置文件参考：https://docs.netbird.io/selfhosted/configuration-files
 - 本地身份管理说明：https://docs.netbird.io/selfhosted/identity-providers/local
 - 访问控制文档：https://docs.netbird.io/manage/access-control/manage-network-access
+- 设备姿态检查：https://docs.netbird.io/manage/access-control/posture-checks
+- Setup Keys：https://docs.netbird.io/manage/peers/register-machines-using-setup-keys
+- Kubernetes Operator：https://docs.netbird.io/manage/integrations/kubernetes
 - 路由网络访问限制：https://docs.netbird.io/manage/networks/accessing-restricted-domain-resources
 
 ## 九、仓库说明
@@ -186,4 +221,5 @@ NetBird 主线部署里，最常用的对外端口如下：
 - [文档目录索引](docs/README.md)
 - [开源协作说明](CONTRIBUTING.md)
 - [安全响应流程](SECURITY.md)
+- [AI Agent 维护说明](AGENTS.md)
 - [版本变更记录](CHANGELOG.md)
