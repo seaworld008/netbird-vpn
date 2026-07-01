@@ -1,5 +1,14 @@
 # NetBird 自建部署与实践手册
 
+[![NetBird](https://img.shields.io/badge/NetBird-v0.73.2-00A3FF?logo=wireguard&logoColor=white)](https://github.com/netbirdio/netbird/releases/tag/v0.73.2)
+[![中文文档](https://img.shields.io/badge/docs-%E4%B8%AD%E6%96%87%E5%AE%9E%E8%B7%B5%E6%89%8B%E5%86%8C-brightgreen)](docs/README.md)
+[![Self Hosted](https://img.shields.io/badge/self--hosted-Docker%20Compose-2496ED?logo=docker&logoColor=white)](docs/selfhosted/quickstart-modern.md)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-ready-326CE5?logo=kubernetes&logoColor=white)](docs/cases/03-kubernetes-connectivity.md)
+[![Zero Trust](https://img.shields.io/badge/Zero%20Trust-access%20control-7C3AED)](docs/cases/08-device-posture-and-zero-trust.md)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-FF69B4)](CONTRIBUTING.md)
+
+> NetBird self-hosted VPN / Zero Trust / WireGuard / Kubernetes / Docker Compose 中文实践手册。
+
 这个仓库面向想要自建、学习和落地 NetBird 的团队和个人，目标是做成一份“入门 + 进阶 + 实战”的用户手册。它重点解决三件事：
 
 - 如何按官方脚本快速完成部署
@@ -15,6 +24,22 @@
 - 文档重点放在“配置说明 + 场景落地 + 运维说明”
 - 场景文档按“原理、配置、验证、排障、回滚、扩展”组织，尽量让新手复制示例后能跑通
 - 最近一次上游版本核对：2026-07-01，官方最新稳定版为 `v0.73.2`
+
+## 适合谁
+
+- 想自建 NetBird VPN / Zero Trust 网络的新手。
+- 正在从 OpenVPN、传统堡垒机或固定 IP 白名单迁移的团队。
+- 需要安全访问 K8S、数据库、内网后台、多云 VPC 的 DevOps / SRE。
+- 想让 AI Agent、CI Runner、自动化任务安全访问内网资源的工程团队。
+- 想持续跟进 NetBird 官方升级、维护中文实践文档的贡献者。
+
+## 项目亮点
+
+- 中文优先，面向新手，步骤尽量可复制。
+- 以官方脚本和 Docker Compose 为自建主线，不维护魔改安装器。
+- 覆盖 OpenVPN 替代、白名单系统、K8S、多云、Exit Node、Reverse Proxy、IdP、MFA、Posture Checks、Setup Keys。
+- 每个核心场景都尽量包含验证、排障和回滚，避免“装完但不会用”。
+- 内置 `AGENTS.md`、路线图、ADR 和校验脚本，方便后续 AI agent 持续维护。
 
 ## 一、推荐阅读顺序
 
