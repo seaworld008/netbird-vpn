@@ -1,6 +1,6 @@
 # 自建部署：官方推荐路径（getting-started.sh）
 
-> 适用版本：NetBird 官方脚本当前最新版（以当前发布版本为准）
+> 适用版本：NetBird 官方脚本当前最新版。最近核对时间为 2026-07-01，官方最新稳定版为 `v0.73.2`。
 
 ## 0. 核心约束（先确认）
 
@@ -76,7 +76,16 @@ docker compose up -d
 - 新建环境完全以官方脚本生成结果为准
 - 本仓库只负责解释这些配置文件如何修改和如何用于实际场景
 
-## 7. 参考
+## 7. 升级到 v0.73 系列后的注意点
+
+- `v0.71` 开始支持 IPv6 overlay addressing。升级到 `v0.73` 时，如果是存量环境，仍建议先选测试组启用 IPv6，确认 DNS、ACL、路由、Exit Node 和客户端版本后再扩大范围。
+- 不接外部 IdP、使用本地用户的部署，建议在首个管理员账号创建后开启 MFA，并保留备用管理员账号。
+- `v0.73` 系列已是当前 `releases/latest` 指向的稳定版本；如果你在生产环境固定镜像版本，先在测试环境验证后再更新。
+- Reverse Proxy / BYOP 能力仍按官方 Dashboard 和文档实际开放情况配置，不提前依赖未完整发布的前端流程。
+
+详细版本核对记录见 [NetBird 上游版本状态](./upstream-version-status.md)。
+
+## 8. 参考
 
 - 官方快速开始：https://docs.netbird.io/selfhosted/selfhosted-quickstart
 - 外部反向代理接入说明：https://docs.netbird.io/selfhosted/reverse-proxy

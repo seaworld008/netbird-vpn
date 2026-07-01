@@ -78,3 +78,134 @@ curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting
 - 服务器端端口变更：只改 `docker-compose.yml` 中 `netbird-server` 与反向代理的端口映射
 - 域名变更：`NETBIRD_DOMAIN` 类变量 + 相关 `http://`/`https://` 地址
 - 证书变更：优先走 Traefik 或外部反向代理标准流程，不手工拼接旧版证书文件路径
+
+## 7. 新手改配置的标准操作流程
+
+每次改配置都按这个顺序，不要直接边改边重启。
+
+### 7.1 先备份当前文件
+
+在 NetBird 服务端目录执行：
+
+```bash
+BACKUP_DIR="backup/$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$BACKUP_DIR"
+cp docker-compose.yml config.yaml dashboard.env "$BACKUP_DIR"/ 2>/dev/null || true
+cp proxy.env caddyfile-netbird.txt nginx-netbird.conf npm-advanced-config.txt "$BACKUP_DIR"/ 2>/dev/null || true
+```
+
+确认目录里有备份：
+
+```bash
+find backup -maxdepth 2 -type f | sort | tail -20
+```
+
+### 7.2 修改域名时要改哪些地方
+
+假设你要把域名从：
+
+```text
+old-netbird.example.com
+```
+
+改成：
+
+```text
+netbird.example.com
+```
+
+至少检查这些文件：
+
+```bash
+grep -R "old-netbird.example.com" -n docker-compose.yml config.yaml dashboard.env proxy.env 2>/dev/null || true
+```
+
+把所有旧域名替换成新域名后，再检查：
+
+```bash
+grep -R "netbird.example.com" -n docker-compose.yml config.yaml dashboard.env proxy.env 2>/dev/null || true
+```
+
+你需要重点确认：
+
+- Dashboard 访问地址是 `https://netbird.example.com`
+- Management / API 地址是 `https://netbird.example.com`
+- Signal / Relay / STUN 相关地址没有残留旧域名
+- 反向代理配置中的 `server_name`、Host、TLS 域名没有残留旧域名
+
+### 7.3 修改端口时要改哪些地方
+
+新手优先不要改默认端口。确实要改时，按这个顺序：
+
+1. 改 `docker-compose.yml` 的 `ports` 映射。
+2. 改云安全组入方向端口。
+3. 改服务器本机防火墙。
+4. 改反向代理配置。
+5. 重启后用 `docker compose ps` 和 `curl` 验证。
+
+默认推荐保留：
+
+```text
+80/tcp
+443/tcp
+3478/udp
+```
+
+如果你只改了 `docker-compose.yml`，但没有改云安全组或本机防火墙，外部仍然访问不到。
+
+### 7.4 修改完成后再重启
+
+先做语法和服务检查：
+
+```bash
+docker compose config >/tmp/netbird-compose.rendered.yml
+docker compose ps
+```
+
+再重启：
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+查看关键日志：
+
+```bash
+docker compose logs --tail=200
+```
+
+### 7.5 重启后的最小验证
+
+在服务端本机验证：
+
+```bash
+curl -I https://netbird.example.com
+```
+
+在外部电脑验证：
+
+```bash
+curl -I https://netbird.example.com
+```
+
+在已安装客户端的机器上验证：
+
+```bash
+netbird status
+```
+
+预期：
+
+- HTTPS 返回 `200`、`302` 或登录页相关响应。
+- 客户端能连接管理端。
+- Dashboard 里能看到 Peer 在线。
+
+如果失败，先不要继续改新配置。直接对照备份回滚：
+
+```bash
+cp backup/<backup-dir>/docker-compose.yml .
+cp backup/<backup-dir>/config.yaml .
+cp backup/<backup-dir>/dashboard.env .
+docker compose up -d
+```

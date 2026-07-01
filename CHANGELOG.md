@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- 更新 2026-07-01 NetBird 上游最新稳定版核对状态，当前 `releases/latest` 指向 `v0.73.2`
+- 扩写 K8S 场景文档，补充路由节点方案、集群内 Deployment YAML、RBAC YAML、kubeconfig、验证与回滚步骤
+- 扩写 OpenVPN 替代、白名单系统、Exit Node / Reverse Proxy、多云互通和进阶最佳实践案例为可执行手册
+- 更新 `docs/selfhosted/upstream-version-status.md`，集中说明官方 release、上游 HEAD、RC 标签和 `v0.73` 系列升级注意点
+- 增补 Docker Compose 配置修改 SOP，覆盖备份、域名、端口、重启验证和回滚步骤
+- 增补运维排障 SOP 与路由节点安全组说明
 - 移除仓库中的 legacy 配置模板与 legacy 文档入口
 - 新增场景化实践手册与运维 Playbook
 - 增加安全、贡献与版本维护规范文件

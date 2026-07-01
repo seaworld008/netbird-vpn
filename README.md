@@ -1,6 +1,6 @@
 # NetBird 自建部署与实践手册
 
-这个仓库面向想要自建 NetBird 的团队和个人，重点解决三件事：
+这个仓库面向想要自建、学习和落地 NetBird 的团队和个人，目标是做成一份“入门 + 进阶 + 实战”的用户手册。它重点解决三件事：
 
 - 如何按官方脚本快速完成部署
 - 如何在 `docker-compose` 场景下理解和修改配置
@@ -13,6 +13,8 @@
 - 服务端以官方脚本生成结果为准
 - 服务端部署方式统一按 `docker-compose`
 - 文档重点放在“配置说明 + 场景落地 + 运维说明”
+- 场景文档按“原理、配置、验证、排障、回滚、扩展”组织，尽量让新手复制示例后能跑通
+- 最近一次上游版本核对：2026-07-01，官方最新稳定版为 `v0.73.2`
 
 ## 一、推荐阅读顺序
 
@@ -21,16 +23,17 @@
 ### 部署
 
 - [官方部署说明（新手优先）](docs/selfhosted/quickstart-modern.md)
+- [NetBird 上游版本状态](docs/selfhosted/upstream-version-status.md)
 - [服务器端配置速查](docs/selfhosted/docker-compose-config-cheatsheet.md)
 
 ### 场景案例
 
-- [案例 1：用 NetBird 替代 OpenVPN](docs/cases/01-openvpn-replacement.md)
-- [案例 2：企业内网白名单系统接入](docs/cases/02-whitelisted-system-access.md)
-- [案例 3：本地办公打通云上 K8S 集群网络](docs/cases/03-kubernetes-connectivity.md)
-- [案例 4：统一出口与代理发布入口](docs/cases/04-exit-node-and-proxy.md)
-- [案例 5：打通多云内网](docs/cases/05-multi-cloud-connectivity.md)
-- [案例 6：官方推荐的高级最佳实践合集](docs/cases/06-official-advanced-scenarios.md)
+- [案例 1：用 NetBird 替代 OpenVPN](docs/cases/01-openvpn-replacement.md)：远程办公接入企业内网
+- [案例 2：企业内网白名单系统接入](docs/cases/02-whitelisted-system-access.md)：敏感后台最小权限访问
+- [案例 3：本地办公打通云上 K8S 集群网络](docs/cases/03-kubernetes-connectivity.md)：API Server、Pod、Service 网络
+- [案例 4：统一出口与代理发布入口](docs/cases/04-exit-node-and-proxy.md)：Exit Node、Reverse Proxy、临时 expose
+- [案例 5：打通多云内网](docs/cases/05-multi-cloud-connectivity.md)：AWS / GCP / Azure 互通
+- [案例 6：NetBird 进阶最佳实践手册](docs/cases/06-official-advanced-scenarios.md)：策略、域名、Setup Key、高可用、审计
 
 ### 运维
 
@@ -58,6 +61,8 @@ export NETBIRD_DOMAIN=netbird.example.com
 ```bash
 curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting-started.sh | bash
 ```
+
+本仓库最近核对到的官方最新稳定版是 `v0.73.2`。实际安装时仍以 `releases/latest` 指向的版本为准；如果你要先看最近版本变化，见 [NetBird 上游版本状态](docs/selfhosted/upstream-version-status.md)。
 
 ### 3. 首次打开管理界面
 
@@ -151,6 +156,7 @@ NetBird 主线部署里，最常用的对外端口如下：
 └── docs/
     ├── selfhosted/
     │   ├── quickstart-modern.md
+    │   ├── upstream-version-status.md
     │   └── docker-compose-config-cheatsheet.md
     ├── cases/
     │   ├── 01-openvpn-replacement.md
