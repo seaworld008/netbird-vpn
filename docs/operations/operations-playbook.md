@@ -87,9 +87,12 @@ docker run --rm \
 3. 确认有回滚窗口。
 4. 如果是生产环境，先在测试环境验证客户端登录、路由、DNS、Exit Node、Reverse Proxy。
 
+独立 Management、Signal、Relay 和外部 IdP 的老部署先按 [Legacy 外部 IdP 部署升级与回滚](legacy-external-idp-upgrade.md) 判断迁移边界，不直接套用新架构迁移工具。
+
 执行：
 
 ```bash
+docker compose config --images
 docker compose pull
 docker compose up -d
 docker compose ps

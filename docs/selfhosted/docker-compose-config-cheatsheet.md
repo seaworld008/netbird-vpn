@@ -19,6 +19,14 @@ curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting
 
 2. 后续变更：只编辑已经生成的 Compose/配置文件，不再改脚本。
 
+3. 首次生成后立即把生产镜像固定到已验证版本：
+
+```bash
+docker compose config --images
+```
+
+输出中不应出现漂移标签。官方脚本的 `releases/latest` 是安装入口，不等于允许 Compose 使用不固定版本。
+
 ## 2. 一套“最少要懂”的配置文件（服务器端）
 
 - `docker-compose.yml`
@@ -209,3 +217,98 @@ cp backup/<backup-dir>/config.yaml .
 cp backup/<backup-dir>/dashboard.env .
 docker compose up -d
 ```
+
+## 8. 生产镜像标签清单
+
+本次核对的稳定基线是 NetBird `0.76.1`、Dashboard `v2.90.9`。下面只展示标签写法，不是可直接覆盖现有拓扑的完整 Compose：
+
+```yaml
+services:
+  dashboard:
+    image: netbirdio/dashboard:v2.90.9
+  signal:
+    image: netbirdio/signal:0.76.1
+  relay:
+    image: netbirdio/relay:0.76.1
+  management:
+    image: netbirdio/management:0.76.1
+```
+
+升级前后都保存镜像清单：
+
+```bash
+docker compose config --images | sort | tee compose-images.txt
+docker compose images
+```
+
+同一部署中可以保留经过验证的 Caddy、Coturn、PostgreSQL 和外部 IdP 版本。不要把一次 NetBird 核心升级扩大成所有基础组件同时升级。
+
+## 9. Routing Peer 使用独立 Compose 项目
+
+把路由节点与服务端 Compose 分开，避免更新服务端时误删或重建数据平面。示例：
+
+```yaml
+name: netbird-routing
+
+services:
+  routing-peer:
+    image: netbirdio/netbird:0.76.1
+    container_name: netbird-routing-peer
+    restart: unless-stopped
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - SYS_ADMIN
+      - SYS_RESOURCE
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - netbird-routing-peer:/var/lib/netbird
+    environment:
+      NB_MANAGEMENT_URL: https://netbird.example.com
+      NB_SETUP_KEY: ${NB_SETUP_KEY:-}
+
+volumes:
+  netbird-routing-peer:
+    name: netbird_routing_peer
+```
+
+首次注册时临时传入 Setup Key：
+
+```bash
+NB_SETUP_KEY='NBSETUP-EXAMPLE-REPLACE-ME' docker compose up -d
+docker compose exec routing-peer netbird status
+```
+
+确认 Peer 已注册后，不把 Setup Key 留在 `.env`、Compose、Shell history 或仓库中。后续重建依赖持久卷中的身份：
+
+```bash
+unset NB_SETUP_KEY
+docker compose up -d
+```
+
+注意：
+
+- 升级某个 Compose 项目时不要附带 `--remove-orphans` 去影响另一项目。
+- 命名卷必须独立且有备份；删除卷会丢失 Routing Peer 身份。
+- 路由节点要开启 `net.ipv4.ip_forward=1`。
+- `Masquerade` 默认开启可减少目标内网的回程路由配置；关闭时必须在 VPC 路由表中配置返回 NetBird 网段的路由。
+
+## 10. 变更前后验收
+
+```bash
+docker compose config >/tmp/netbird-compose.rendered.yml
+docker compose config --images
+docker compose pull
+docker compose up -d
+docker compose ps
+docker compose logs --since=10m --tail=300
+```
+
+除容器健康状态外，还要从客户端验证：
+
+- 管理端可登录，已有账号、Groups、Policies、Networks 没有变化。
+- 已有 Peer 保持原身份和 NetBird IP。
+- Routing Peer 在线，授权资源的真实 TCP/HTTPS 请求可达。
+- 非授权账号或设备无法访问同一资源。
+- 业务请求前后 Routing Peer 的发送/接收计数增长，证明流量确实经过 NetBird 数据平面。

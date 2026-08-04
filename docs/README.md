@@ -18,12 +18,15 @@
   - `08-device-posture-and-zero-trust.md`：Posture Checks、客户端版本、系统、网络范围、进程检查
   - `09-automation-with-setup-keys.md`：Cloud-init、Ansible、Terraform、CI Runner 自动接入
   - `10-managed-kubernetes-clouds.md`：ACK、EKS、GKE、AKS 托管 K8S 差异和检查点
+  - `11-precision-vpc-access.md`：按 `/32` 精确授权 VPC 主机、域名资源兜底、验收和 WireGuard 共存
+  - `12-client-platform-onboarding.md`：Windows、macOS、Linux 安装升级和一次性 Setup Key 接入
 
 - `operations/`
   - `firewall-and-hardening.md`：阿里云安全组、端口与安全加固
   - `operations-playbook.md`：日常运维、备份、升级、回滚与排障 SOP
   - `monitoring-and-audit.md`：服务端、路由节点、客户端巡检、审计与告警建议
   - `disaster-recovery-drill.md`：备份恢复演练、跨主机恢复、DNS 切换和 RPO/RTO
+  - `legacy-external-idp-upgrade.md`：外部 IdP 老架构的备份、分阶段升级、验收和回滚
 
 - `maintenance/`
   - `upstream-upgrade-workflow.md`：跟踪 NetBird 官方升级、评估影响、同步文档的标准流程
@@ -32,6 +35,7 @@
 
 - `decisions/`
   - `ADR-001-documentation-operating-model.md`：文档运营模型的长期决策记录
+  - `ADR-002-pinned-images-and-routing-peer-isolation.md`：固定镜像版本与隔离 Routing Peer 的长期决策
 
 - `templates/`
   - `case-template.md`：新增场景文档时使用的标准模板

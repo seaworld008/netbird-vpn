@@ -471,6 +471,45 @@ sudo systemctl stop netbird
 
 要求：对应 Routing Peer 能解析这些域名。
 
+### 13.4 先按主机授权，再扩成子网
+
+多云接入不要从“三朵云全网互通”起步。建议按以下阶段推进：
+
+1. 每朵云先部署一台独立 Routing Peer，只发布一个测试主机 `/32`。
+2. 分别完成授权用户成功、非授权用户失败和真实 TCP/HTTPS 验证。
+3. 按业务域增加 `/32` 资源，并记录负责人、端口和有效期。
+4. 只有同一子网内大多数主机确实共享相同授权边界时，才合并为小 CIDR。
+5. 最后增加第二台 Routing Peer，验证主备切换和故障恢复。
+
+为后续阿里云、腾讯云、华为云或自建机房扩展，维护一份不含凭据的资源台账：
+
+| 字段 | 示例 |
+| --- | --- |
+| Cloud / Account | `cloud-a / production` |
+| Region / VPC | `region-1 / vpc-app` |
+| Resource | `10.20.30.11/32` |
+| Owner | `team-app` |
+| Protocol / Port | `TCP 443` |
+| Routing Peer Group | `routing-peers-cloud-a-region-1` |
+| User Group | `users-app-readonly` |
+| Policy | `allow-app-readonly` |
+| Review Date | `YYYY-MM-DD` |
+
+每个云或区域的 Routing Peer 使用独立 Compose 项目、持久卷和 Setup Key。镜像固定版本，注册完成后清除 Setup Key。这样管理面升级不会把所有云的数据面同时重建。
+
+### 13.5 多云变更验收
+
+每次新增云、VPC 或资源时记录：
+
+- 客户端到目标的实际 DNS 解析和路由。
+- Routing Peer 请求前后的传输计数。
+- 目标云安全组看到的源地址是否符合 Masquerade 设计。
+- 主 Routing Peer 停止后，备用节点是否在预期时间内接管。
+- 与本机其他 VPN 是否存在相同 CIDR 或 `/32` 路由冲突。
+- 非授权组访问同一目标是否失败。
+
+这份验收记录应和资源台账一起更新，避免多云规模扩大后只剩 Dashboard 中无法解释的历史配置。
+
 ## 14. 官方参考
 
 - Routing Peers 原理：https://docs.netbird.io/manage/networks/how-routing-peers-work

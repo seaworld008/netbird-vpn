@@ -53,18 +53,22 @@
     │   ├── 07-identity-provider-and-mfa.md
     │   ├── 08-device-posture-and-zero-trust.md
     │   ├── 09-automation-with-setup-keys.md
-    │   └── 10-managed-kubernetes-clouds.md
+    │   ├── 10-managed-kubernetes-clouds.md
+    │   ├── 11-precision-vpc-access.md
+    │   └── 12-client-platform-onboarding.md
     ├── operations/
     │   ├── firewall-and-hardening.md
     │   ├── operations-playbook.md
     │   ├── monitoring-and-audit.md
-    │   └── disaster-recovery-drill.md
+    │   ├── disaster-recovery-drill.md
+    │   └── legacy-external-idp-upgrade.md
     ├── maintenance/
     │   ├── upstream-upgrade-workflow.md
     │   ├── documentation-governance.md
     │   └── roadmap.md
     ├── decisions/
-    │   └── ADR-001-documentation-operating-model.md
+    │   ├── ADR-001-documentation-operating-model.md
+    │   └── ADR-002-pinned-images-and-routing-peer-isolation.md
     └── templates/
         └── case-template.md
 ```
@@ -240,11 +244,11 @@ grafana.proxy.example.com
 
 维护者或 AI agent 可以优先补：
 
-1. `docs/cases/11-reverse-proxy-production-hardening.md`：Traefik、Nginx、Nginx Proxy Manager、证书和真实客户端 IP。
-2. `docs/cases/12-client-platform-onboarding.md`：Windows、macOS、Linux、iOS、Android 安装、登录、日志和常见问题。
-3. `docs/cases/13-public-api-automation.md`：用户、邀请、Setup Key、资源、策略的自动化管理。
-4. `docs/cases/14-enterprise-idp-deep-dive.md`：Google Workspace、Microsoft Entra ID、Okta、Keycloak、SCIM 深入实践。
-5. `docs/cases/15-mdm-edr-device-compliance.md`：MDM、EDR、设备准入、离职设备回收。
+1. `docs/cases/13-reverse-proxy-production-hardening.md`：Traefik、Nginx、Nginx Proxy Manager、证书和真实客户端 IP。
+2. `docs/cases/14-public-api-automation.md`：用户、邀请、Setup Key、资源、策略的自动化管理。
+3. `docs/cases/15-enterprise-idp-deep-dive.md`：Google Workspace、Microsoft Entra ID、Okta、Keycloak、SCIM 深入实践。
+4. `docs/cases/16-mdm-edr-device-compliance.md`：MDM、EDR、设备准入、离职设备回收。
+5. `docs/cases/17-mobile-client-onboarding.md`：iOS、Android 安装、登录、MDM 下发和常见问题。
 
 新增时遵循 `docs/templates/case-template.md`。
 路线图见 `docs/maintenance/roadmap.md`；重大组织方式变化先写 `docs/decisions/ADR-XXX-*.md`。
