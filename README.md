@@ -57,7 +57,7 @@
 - [案例 2：企业内网白名单系统接入](docs/cases/02-whitelisted-system-access.md)：敏感后台最小权限访问
 - [案例 3：本地办公打通云上 K8S 集群网络](docs/cases/03-kubernetes-connectivity.md)：API Server、Pod、Service 网络
 - [案例 4：统一出口与代理发布入口](docs/cases/04-exit-node-and-proxy.md)：Exit Node、Reverse Proxy、临时 expose
-- [案例 5：打通多云内网](docs/cases/05-multi-cloud-connectivity.md)：AWS / GCP / Azure 互通
+- [案例 5：打通多云内网](docs/cases/05-multi-cloud-connectivity.md)：阿里云 / 华为云 / AWS / GCP / Azure 互通
 - [案例 6：NetBird 进阶最佳实践手册](docs/cases/06-official-advanced-scenarios.md)：策略、域名、Setup Key、高可用、审计
 - [案例 7：身份源、用户生命周期与 MFA](docs/cases/07-identity-provider-and-mfa.md)：本地用户、企业 IdP、组同步、离职回收
 - [案例 8：设备姿态检查与 Zero Trust](docs/cases/08-device-posture-and-zero-trust.md)：客户端版本、系统、网络、进程检查
@@ -70,6 +70,7 @@
 
 - [阿里云安全组与端口说明](docs/operations/firewall-and-hardening.md)
 - [日常运维与故障排查](docs/operations/operations-playbook.md)
+- [云 VPC 容器化 Routing Peer 运维手册](docs/operations/containerized-routing-peer-runbook.md)
 - [监控、审计与持续巡检](docs/operations/monitoring-and-audit.md)
 - [自建 NetBird 灾备与恢复演练](docs/operations/disaster-recovery-drill.md)
 - [Legacy 外部 IdP 部署升级与回滚](docs/operations/legacy-external-idp-upgrade.md)
@@ -219,6 +220,7 @@ NetBird 主线部署里，最常用的对外端口如下：
     │   ├── 11-precision-vpc-access.md
     │   └── 12-client-platform-onboarding.md
     ├── operations/
+    │   ├── containerized-routing-peer-runbook.md
     │   ├── firewall-and-hardening.md
     │   ├── operations-playbook.md
     │   ├── monitoring-and-audit.md

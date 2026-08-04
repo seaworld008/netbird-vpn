@@ -57,6 +57,7 @@
     │   ├── 11-precision-vpc-access.md
     │   └── 12-client-platform-onboarding.md
     ├── operations/
+    │   ├── containerized-routing-peer-runbook.md
     │   ├── firewall-and-hardening.md
     │   ├── operations-playbook.md
     │   ├── monitoring-and-audit.md

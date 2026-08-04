@@ -12,7 +12,7 @@
   - `02-whitelisted-system-access.md`：企业内部白名单系统接入，含单资源单组、后端白名单、授权/非授权验证
   - `03-kubernetes-connectivity.md`：K8S 网络打通、完整 YAML、验证与回滚
   - `04-exit-node-and-proxy.md`：Exit Node、Reverse Proxy、`netbird expose` 临时发布
-  - `05-multi-cloud-connectivity.md`：AWS / GCP / Azure 多云互通、云防火墙、分阶段验证
+  - `05-multi-cloud-connectivity.md`：阿里云 / 华为云 / AWS / GCP / Azure 多云互通、云防火墙、分阶段验证
   - `06-official-advanced-scenarios.md`：进阶最佳实践，含策略模型、域名资源、Setup Key、高可用和审计模板
   - `07-identity-provider-and-mfa.md`：本地用户、外部 IdP、MFA、组同步、离职回收
   - `08-device-posture-and-zero-trust.md`：Posture Checks、客户端版本、系统、网络范围、进程检查
@@ -22,6 +22,7 @@
   - `12-client-platform-onboarding.md`：Windows、macOS、Linux 安装升级和一次性 Setup Key 接入
 
 - `operations/`
+  - `containerized-routing-peer-runbook.md`：云 VPC 容器化 Routing Peer、持久身份、Setup Key 清除、双云验收和回滚
   - `firewall-and-hardening.md`：阿里云安全组、端口与安全加固
   - `operations-playbook.md`：日常运维、备份、升级、回滚与排障 SOP
   - `monitoring-and-audit.md`：服务端、路由节点、客户端巡检、审计与告警建议

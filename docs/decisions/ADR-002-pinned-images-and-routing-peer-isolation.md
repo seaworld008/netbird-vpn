@@ -18,10 +18,11 @@ Accepted
 
 1. 所有生产 Compose 镜像使用经过验证的明确版本标签。
 2. 官方 `releases/latest` 只用于获取首次部署脚本，不作为容器运行时版本策略。
-3. Routing Peer 使用独立 Compose 项目、独立命名卷和固定客户端镜像。
+3. Routing Peer 使用独立 Compose 项目、独立命名卷或明确 bind mount，以及固定客户端镜像。
 4. Setup Key 只在首次注册时临时注入，注册成功后从环境和文件中删除。
 5. 升级不使用可能跨项目清理容器的操作；核心服务与 Routing Peer 分阶段更新。
 6. 每次更新保存 `docker compose config --images` 输出、备份校验和业务验收记录。
+7. Routing Peer 的长期身份来自持久化的 `/var/lib/netbird`；不使用永不过期 Setup Key 代替身份目录备份。
 
 ## Alternatives Considered
 
@@ -41,7 +42,7 @@ Accepted
 
 - 上游发布新版本后不会自动升级，需要维护者主动核对和变更标签。
 - Routing Peer 可以独立升级、回滚和做主备切换。
-- 灾备必须同时覆盖管理面数据和 Routing Peer 命名卷。
+- 灾备必须同时覆盖管理面数据和 Routing Peer 身份目录。
 - 版本清单、备份、验收成为每次升级的必做项。
 
 ## Follow-up

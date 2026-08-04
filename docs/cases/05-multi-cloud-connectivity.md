@@ -1,7 +1,9 @@
-# 案例五：打通多云内网（AWS / GCP / Azure）
+# 案例五：打通多云内网（阿里云 / 华为云 / AWS / GCP / Azure）
 
 > 这个场景适合已经有多套云网络，但不想为每对网络维护传统 IPSec VPN、专线或复杂路由表的团队。
 > 本文按“先打通 AWS 与 GCP，再扩展 Azure”的顺序写，便于新手排障。
+
+阿里云、华为云、腾讯云和自建机房使用相同模型：每个 VPC 放置独立 Routing Peer，再用 Network、Resource Group 和 Policy 建立最小权限边界。需要在老 Linux 服务器上用 Docker Compose 部署常驻路由节点时，直接参考 [云 VPC 容器化 Routing Peer 运维手册](../operations/containerized-routing-peer-runbook.md)。
 
 ## 1. 最终效果
 
@@ -106,6 +108,8 @@ nc -vz 192.168.10.40 443
 ## 5. 创建 Setup Keys
 
 建议每个云单独一个 Setup Key。
+
+Setup Key 只负责首次注册。它过期或被撤销后，不会让已经注册成功的 Routing Peer 失效；长期身份来自客户端状态目录。容器部署必须持久化 `/var/lib/netbird`，注册完成后清空容器环境中的 Setup Key，并做一次无 Key 重建演练。
 
 | Key 名称 | Auto-assigned groups | 使用次数 |
 | --- | --- | --- |
@@ -497,6 +501,8 @@ sudo systemctl stop netbird
 
 每个云或区域的 Routing Peer 使用独立 Compose 项目、持久卷和 Setup Key。镜像固定版本，注册完成后清除 Setup Key。这样管理面升级不会把所有云的数据面同时重建。
 
+对容器化节点，优先把状态绑定到明确目录，例如 `/data/netbird-client/data:/var/lib/netbird`。备份的是身份目录，而不是已经过期的 Setup Key。
+
 ### 13.5 多云变更验收
 
 每次新增云、VPC 或资源时记录：
@@ -507,6 +513,8 @@ sudo systemctl stop netbird
 - 主 Routing Peer 停止后，备用节点是否在预期时间内接管。
 - 与本机其他 VPN 是否存在相同 CIDR 或 `/32` 路由冲突。
 - 非授权组访问同一目标是否失败。
+- 授权账号对应的实际 Peer 是否进入访问组并收到 Network；不要只检查账号是否存在。
+- Routing Peer 本机 LAN IP 是否属于自访问需求；若是，需另建 peer-to-peer Policy，并评估 userspace 节点的 `NB_ENABLE_LOCAL_FORWARDING`。
 
 这份验收记录应和资源台账一起更新，避免多云规模扩大后只剩 Dashboard 中无法解释的历史配置。
 
