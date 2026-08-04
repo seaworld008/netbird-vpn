@@ -10,6 +10,7 @@
 - Docker Compose 生成文件说明。
 - OpenVPN 替代、白名单系统、K8S、多云、Exit Node、Reverse Proxy。
 - 身份源、设备姿态、Setup Key 自动化、托管 K8S 云厂商差异。
+- VPC 单主机精确授权、跨平台客户端接入、Legacy 外部 IdP 升级。
 - 日常运维、监控审计、备份、升级、回滚。
 - 上游版本跟踪、文档治理、AI Agent 维护说明。
 
@@ -49,7 +50,7 @@
 ### P1：补齐生产化能力
 
 - 反向代理生产专项：Traefik、Nginx、Nginx Proxy Manager、证书、真实客户端 IP、HTTP/3。
-- 客户端专项：Windows、macOS、Linux、iOS、Android 的安装、登录、日志和常见问题。
+- 移动客户端专项：iOS、Android 的安装、登录、MDM 下发和常见问题。
 - Public API 自动化专项：创建用户、邀请用户、Setup Key、资源、策略的安全脚本范式。
 - 审计专项：Activity、用户生命周期、Setup Key 使用、临时策略关闭。
 - 灾备专项：备份恢复演练、跨主机恢复、DNS 切换、RPO/RTO。
@@ -109,10 +110,10 @@ git diff --stat
 
 可以按下面顺序继续：
 
-1. `docs/cases/11-reverse-proxy-production-hardening.md`
-2. `docs/cases/12-client-platform-onboarding.md`
-3. `docs/cases/13-public-api-automation.md`
-4. `docs/cases/14-enterprise-idp-deep-dive.md`
-5. `docs/cases/15-mdm-edr-device-compliance.md`
+1. `docs/cases/13-reverse-proxy-production-hardening.md`
+2. `docs/cases/14-public-api-automation.md`
+3. `docs/cases/15-enterprise-idp-deep-dive.md`
+4. `docs/cases/16-mdm-edr-device-compliance.md`
+5. `docs/cases/17-mobile-client-onboarding.md`
 
 这些文件未创建前，不要在 README 里做成正式入口；可以在 `AGENTS.md` 或本路线图里作为后续方向维护。

@@ -87,6 +87,15 @@ git ls-remote https://github.com/netbirdio/netbird.git HEAD refs/heads/main
 | Exit Node | Auto Apply、IPv6、DNS 防泄漏、ICMP 策略要求 |
 | Reverse Proxy | 服务端前置条件、认证方式、`netbird expose` 参数 |
 | Kubernetes | Deployment YAML、Operator CRD、镜像版本、探针命令 |
+| Legacy external IdP | 官方迁移工具是否支持当前拓扑、账号映射、数据库备份与恢复 |
+
+生产 Compose 还必须核对：
+
+```bash
+docker compose config --images
+```
+
+所有运行镜像都应使用明确标签。首次安装脚本使用 `releases/latest` 不影响这一要求。
 
 ## 7. 文档更新后的本地校验
 

@@ -15,6 +15,8 @@
 
 Setup Key 是预认证注册令牌。机器第一次运行 `netbird up --setup-key ...` 时，会加入你的 NetBird 账号，并按 key 的 auto-assigned groups 自动分组。
 
+本文只处理服务器和自动化工作负载。为具体人员发放一台设备的一年期、一次性连接凭据时，不需要创建控制台账号，参见 [客户端安装、升级与 Setup Key 接入](12-client-platform-onboarding.md)。人用 Key 和自动化 Key 不得复用。
+
 ```mermaid
 flowchart LR
     IaC["Terraform / Cloud-init / Ansible"] --> Key["Setup Key"]

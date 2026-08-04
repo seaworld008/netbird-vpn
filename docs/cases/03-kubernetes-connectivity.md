@@ -575,7 +575,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: netbird
-          image: netbirdio/netbird:v0.73.2
+          image: netbirdio/netbird:0.76.1
           imagePullPolicy: IfNotPresent
           env:
             - name: NB_SETUP_KEY
@@ -643,7 +643,7 @@ spec:
 
 - `NB_SETUP_KEY`：换成你自己的 Setup Key。
 - `NB_MANAGEMENT_URL`：换成你的 NetBird 域名。
-- `image`：如果你明确要跟随最新版，可以改成 `netbirdio/netbird:latest`；生产环境建议固定到已验证版本。
+- `image`：固定到团队验证过的明确版本。升级时修改标签并重新部署，不在生产环境使用漂移标签。
 
 应用：
 

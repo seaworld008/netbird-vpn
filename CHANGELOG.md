@@ -2,7 +2,13 @@
 
 ## Unreleased
 
-- 更新 2026-07-01 NetBird 上游最新稳定版核对状态，当前 `releases/latest` 指向 `v0.73.2`
+- 更新 2026-08-04 上游稳定版基线：NetBird `v0.76.1`、Dashboard `v2.90.9`
+- 新增 Legacy 外部 IdP 架构升级、备份校验、分阶段发布和回滚手册
+- 新增 VPC `/32` 精确授权、域名资源兜底、策略验收和 WireGuard 共存案例
+- 新增 Windows、macOS、Linux 客户端安装、升级与一次性 Setup Key 接入手册
+- 明确生产 Compose 镜像固定标签、Routing Peer 独立项目和注册密钥生命周期规范
+- 新增 ADR-002，记录固定镜像版本和隔离 Routing Peer 的长期决策
+- 将文档校验器改为 Python 实现，并新增 PR / main 自动校验工作流
 - 扩写 K8S 场景文档，补充路由节点方案、集群内 Deployment YAML、RBAC YAML、kubeconfig、验证与回滚步骤
 - 扩写 OpenVPN 替代、白名单系统、Exit Node / Reverse Proxy、多云互通和进阶最佳实践案例为可执行手册
 - 更新 `docs/selfhosted/upstream-version-status.md`，集中说明官方 release、上游 HEAD、RC 标签和 `v0.73` 系列升级注意点
