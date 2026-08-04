@@ -78,6 +78,21 @@ docker run --rm \
 
 不要把备份只放在同一台机器上，至少同步到对象存储、NAS 或离线备份位置。
 
+### 2.3 Routing Peer 身份备份
+
+容器化 Routing Peer 的 Setup Key 只用于首次注册。灾备必须保存映射到 `/var/lib/netbird` 的身份目录，不能依赖一个永不过期 Key。
+
+bind mount 示例：
+
+```bash
+tar czf "backup/routing-peer-identity-$(date +%Y%m%d-%H%M%S).tgz" \
+  -C /data/netbird-client data
+chmod 600 backup/routing-peer-identity-*.tgz
+tar tzf backup/routing-peer-identity-*.tgz | head
+```
+
+身份目录包含 Peer 私钥，备份应加密并放到受控存储。恢复同一身份前必须确认原 Peer 已离线，不能把同一份身份复制给两台同时在线的节点。恢复后不带 Setup Key 启动容器，并核对 NetBird IP、Groups 和 Networks。完整流程见 [云 VPC 容器化 Routing Peer 运维手册](containerized-routing-peer-runbook.md)。
+
 ## 3. 升级
 
 升级前：

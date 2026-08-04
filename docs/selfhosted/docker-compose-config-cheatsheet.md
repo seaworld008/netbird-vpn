@@ -243,7 +243,7 @@ docker compose images
 
 同一部署中可以保留经过验证的 Caddy、Coturn、PostgreSQL 和外部 IdP 版本。不要把一次 NetBird 核心升级扩大成所有基础组件同时升级。
 
-## 9. Routing Peer 使用独立 Compose 项目
+## 9. Routing Peer 使用独立 Compose 项目和持久身份
 
 把路由节点与服务端 Compose 分开，避免更新服务端时误删或重建数据平面。示例：
 
@@ -263,14 +263,11 @@ services:
     devices:
       - /dev/net/tun:/dev/net/tun
     volumes:
-      - netbird-routing-peer:/var/lib/netbird
+      - /data/netbird-client/data:/var/lib/netbird
     environment:
       NB_MANAGEMENT_URL: https://netbird.example.com
       NB_SETUP_KEY: ${NB_SETUP_KEY:-}
 
-volumes:
-  netbird-routing-peer:
-    name: netbird_routing_peer
 ```
 
 首次注册时临时传入 Setup Key：
@@ -284,15 +281,22 @@ docker compose exec routing-peer netbird status
 
 ```bash
 unset NB_SETUP_KEY
-docker compose up -d
+docker compose up -d --force-recreate routing-peer
+docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' \
+  netbird-routing-peer | grep '^NB_SETUP_KEY='
 ```
+
+Setup Key 过期只影响注册新 Peer，不影响已经注册的 Peer。长期可恢复性来自 `/data/netbird-client/data`，不是来自一个永不过期 Key。无 Key 重建后应确认 NetBird IP、Groups 和 Networks 与重建前一致。
 
 注意：
 
 - 升级某个 Compose 项目时不要附带 `--remove-orphans` 去影响另一项目。
-- 命名卷必须独立且有备份；删除卷会丢失 Routing Peer 身份。
+- 独立命名卷或明确 bind mount 必须有备份；删除身份数据会丢失 Routing Peer 身份。
 - 路由节点要开启 `net.ipv4.ip_forward=1`。
 - `Masquerade` 默认开启可减少目标内网的回程路由配置；关闭时必须在 VPC 路由表中配置返回 NetBird 网段的路由。
+- Docker Compose v1 若在重建时遇到容器名冲突，先核对容器归属，再仅停止并删除该 Routing Peer 容器。不要使用 `down -v` 或跨项目的 `--remove-orphans`。
+
+完整的 `/data/netbird-client` 部署、旧 Compose v1 兼容重建和双云验收流程见 [云 VPC 容器化 Routing Peer 运维手册](../operations/containerized-routing-peer-runbook.md)。
 
 ## 10. 变更前后验收
 

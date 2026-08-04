@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 新增云 VPC 容器化 Routing Peer 实操手册，覆盖独立 Compose、固定镜像、持久身份、Setup Key 清除、旧 Compose v1 重建、双云验收和回滚
+- 补充 Setup Key 过期不影响已注册 Peer、用户授权需核对实际设备分组，以及 Routing Peer 自身地址需要独立输入链路策略的说明
 - 更新 2026-08-04 上游稳定版基线：NetBird `v0.76.1`、Dashboard `v2.90.9`
 - 新增 Legacy 外部 IdP 架构升级、备份校验、分阶段发布和回滚手册
 - 新增 VPC `/32` 精确授权、域名资源兜底、策略验收和 WireGuard 共存案例

@@ -15,6 +15,8 @@
 
 Setup Key 是预认证注册令牌。机器第一次运行 `netbird up --setup-key ...` 时，会加入你的 NetBird 账号，并按 key 的 auto-assigned groups 自动分组。
 
+Setup Key 的过期时间只限制注册新 Peer。已经成功注册的 Peer 依赖本机状态文件继续认证，Key 过期或被 revoke 不会让它自动掉线。需要立即撤销已注册机器时，应删除 Peer、移除访问组或禁用相关 Policy，而不是只 revoke Setup Key。
+
 本文只处理服务器和自动化工作负载。为具体人员发放一台设备的一年期、一次性连接凭据时，不需要创建控制台账号，参见 [客户端安装、升级与 Setup Key 接入](12-client-platform-onboarding.md)。人用 Key 和自动化 Key 不得复用。
 
 ```mermaid
@@ -45,6 +47,17 @@ Dashboard：
 4. 设置 usage limit。
 5. 选择 auto-assigned groups。
 6. 短生命周期 workload 开启 ephemeral peers。
+
+### 3.1 长期节点不要追求“永不过期 Key”
+
+生产 Routing Peer、数据库跳板机等长期节点仍建议使用短期、低 usage limit 的 Key。正确做法是：
+
+1. 首次注册时临时注入 Key。
+2. 持久化客户端身份目录。
+3. 确认 Peer 在线后，从环境、文件和自动化日志中删除 Key。
+4. 不带 Key 重启或重建一次，确认身份和 NetBird IP 保持不变。
+
+Docker 客户端默认身份目录是 `/var/lib/netbird`。完整容器操作见 [云 VPC 容器化 Routing Peer 运维手册](../operations/containerized-routing-peer-runbook.md)。
 
 ## 4. 通用安装脚本
 
@@ -255,6 +268,11 @@ curl -k -I https://10.20.10.20
 - key 使用次数是否耗尽。
 - key 是否被 revoke。
 - 机器时间是否异常。
+
+先判断当前动作是“注册新 Peer”还是“启动已注册 Peer”：
+
+- 新 Peer 注册失败：检查过期时间、usage limit、revoke 状态和 Key 内容。
+- 已注册 Peer 启动失败：不要创建永久 Key；检查身份目录是否挂载正确、状态文件是否丢失、Peer 是否在 Dashboard 被删除。
 
 ### 10.2 自动加入了错误组
 

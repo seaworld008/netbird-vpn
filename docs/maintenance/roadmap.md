@@ -11,6 +11,7 @@
 - OpenVPN 替代、白名单系统、K8S、多云、Exit Node、Reverse Proxy。
 - 身份源、设备姿态、Setup Key 自动化、托管 K8S 云厂商差异。
 - VPC 单主机精确授权、跨平台客户端接入、Legacy 外部 IdP 升级。
+- 云 VPC 容器化 Routing Peer、持久身份、密钥清除和双云连通验收。
 - 日常运维、监控审计、备份、升级、回滚。
 - 上游版本跟踪、文档治理、AI Agent 维护说明。
 
