@@ -116,6 +116,19 @@ curl.exe -vk --connect-timeout 10 https://10.20.30.11/
 
 在请求前后查看 Routing Peer 状态或网络计数；传输量增长能证明请求经过 NetBird 数据平面。
 
+不要使用 Routing Peer 的公网 IP 作为 VPN 数据面验收目标。公网 IP 成功只能
+证明服务和公网入口正常，不能证明客户端获得了 Network、Policy 生效或请求经过
+Routing Peer。
+
+还要检查目标是否与客户端本地 LAN 重叠。例如客户端本地路由是
+`192.168.1.0/24`，远端资源是 `192.168.0.0/16` 时，Windows 会优先匹配本地
+`/24`。即使 TCP 请求成功，也可能根本没有进入 NetBird。推荐按以下顺序验证：
+
+1. 使用真实、不重叠的 VPC `/32` 目标。
+2. 请求前后比较 Routing Peer 收发计数。
+3. 必要时在 Routing Peer 或目标侧抓包，确认请求到达。
+4. 没有合适目标时，临时创建受控 `/32` 测试端点，验收后删除。
+
 ## 9. 授权与拒绝测试
 
 至少准备两台测试 Peer：
@@ -153,10 +166,11 @@ Windows 通常先按最长前缀匹配：NetBird 的目标 `/32` 会优先于另
 1. `netbird status` 确认 Management 和 Signal 连接。
 2. `netbird networks list` 确认 Network 已选择且资源可见。
 3. 检查客户端目标路由和 DNS 解析。
-4. 检查 Policy 是否被更宽的 allow 规则覆盖。
-5. 检查 Routing Peer 在线、IP forwarding 和 Masquerade。
-6. 检查云安全组、主机防火墙和应用监听端口。
-7. 用 TCP/HTTPS 验证，不以 ICMP 作为唯一依据。
+4. 检查本地 LAN、其他 VPN 与目标资源是否重叠，并按最长前缀判断实际路径。
+5. 检查 Policy 是否被更宽的 allow 规则覆盖。
+6. 检查 Routing Peer 在线、IP forwarding 和 Masquerade。
+7. 检查云安全组、主机防火墙和应用监听端口。
+8. 用 TCP/HTTPS 验证，不以 ICMP 或公网 IP 成功作为唯一依据。
 
 ## 12. 回滚
 

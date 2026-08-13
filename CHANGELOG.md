@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- 将多用途 Docker 主机上的 Routing Peer 默认网络从 host 改为独立 bridge，并
+  强制校验 Userspace 数据面，避免旧内核 nftables / iptables 冲突影响业务容器
+- 增加业务容器 DNS、SNAT、TCP 和重启次数的变更前后回归，以及只停止 Routing
+  Peer 的最小化故障隔离步骤
+- 明确 `Netstack` 不等于宿主机网络命名空间隔离，公网 IP 可用也不等于 VPN
+  数据面可用
+- 增加客户端本地 LAN 与远端大网段重叠的最长前缀陷阱，以及 `/32`、传输计数和
+  抓包联合验收方法
+
 ## 0.3.0 - 2026-08-13
 
 - 新增 Kubernetes 集群内 Routing Peer 生产运维手册，覆盖 Operator / VM / 手工 DaemonSet 选型、双节点独立身份、短期受限 Setup Key、节点标签、持久化和分阶段发布

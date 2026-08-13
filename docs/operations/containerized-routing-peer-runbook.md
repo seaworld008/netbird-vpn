@@ -12,6 +12,7 @@
 - Setup Key 过期或被撤销后，已经注册的 Peer 仍能继续连接。
 - 删除并重建容器后，Peer 名称和 NetBird IP 保持不变。
 - Compose 使用明确镜像标签，不使用 `latest`。
+- Routing Peer 不进入宿主机网络命名空间，同机业务容器的 DNS、SNAT 和外联不受影响。
 
 示例拓扑：
 
@@ -36,6 +37,21 @@ Network Resource Policy 允许流量经过 Routing Peer 到达它后面的资源
 
 如果客户端用 Routing Peer 的局域网 IP 访问它自身，并且该 Peer 使用 userspace/netstack 转发，还需要显式开启 `NB_ENABLE_LOCAL_FORWARDING=true`。没有这项需求时保持关闭，避免扩大本机服务暴露面。
 
+### 2.3 Netstack 不能替代网络命名空间隔离
+
+`NB_USE_NETSTACK_MODE=true` 决定 NetBird 隧道数据面使用 Userspace，但容器如果
+仍使用 host 网络，进程依然处于宿主机网络命名空间，仍可能探测或修改宿主机的
+nftables / iptables。
+
+因此，在同时承载数据库代理、Web、监控或其他 Docker 业务的主机上，默认组合是：
+
+```text
+独立 Docker bridge 网络 + NB_USE_NETSTACK_MODE=true
+```
+
+不要把 `host network + Netstack` 当作等价替代。host 网络只适合专用路由主机，
+而且必须经过宿主机防火墙和同机业务回归后才能采用。
+
 ## 3. 示例参数
 
 | 项目 | 示例值 |
@@ -51,6 +67,7 @@ Network Resource Policy 允许流量经过 Routing Peer 到达它后面的资源
 | Network | `cloud-a-vpc` |
 | Resource | `192.168.0.0/16` |
 | Routing Peer LAN IP | `192.168.1.10` |
+| Routing Peer Docker subnet | `172.30.250.0/24` |
 
 生产环境可以把同一版本镜像同步到内网仓库，例如：
 
@@ -73,7 +90,17 @@ sysctl net.ipv4.ip_forward
 ip -4 addr
 ip route
 docker ps --format '{{.Names}}|{{.Status}}|{{.Image}}'
+docker network ls
 ss -lntup
+```
+
+示例 Docker 子网必须同时避开宿主机路由、VPC 资源、现有 Docker 网络和常见
+客户端 LAN。先检查再落盘：
+
+```bash
+ip route show table all
+docker network inspect $(docker network ls -q) \
+  --format '{{range .IPAM.Config}}{{.Subnet}}{{"\n"}}{{end}}'
 ```
 
 Routing Peer 必须能直接访问目标 VPC 资源：
@@ -93,6 +120,22 @@ docker ps --format '{{.Names}}|{{.Status}}|{{.Image}}' \
   > /data/netbird-client/backup/pre-install-containers.txt
 ip route > /data/netbird-client/backup/pre-install-routes.txt
 iptables-save > /data/netbird-client/backup/pre-install-iptables.rules
+nft list ruleset > /data/netbird-client/backup/pre-install-nftables.rules 2>/dev/null || true
+```
+
+如果主机承载其他 bridge 容器，还要选一个真实业务容器，记录 Routing Peer 启动
+前的 DNS 和 TCP 基线。不要只测宿主机：
+
+```bash
+BUSINESS_CONTAINER=app-web
+BUSINESS_HOST=db.example.com
+BUSINESS_PORT=5432
+
+docker exec "$BUSINESS_CONTAINER" getent hosts "$BUSINESS_HOST"
+docker exec "$BUSINESS_CONTAINER" sh -c \
+  "nc -vz -w 5 '$BUSINESS_HOST' '$BUSINESS_PORT'"
+docker inspect --format 'started={{.State.StartedAt}} restart={{.RestartCount}}' \
+  "$BUSINESS_CONTAINER"
 ```
 
 ## 5. 创建独立 Compose 项目
@@ -115,7 +158,10 @@ services:
     container_name: netbird-routing-peer
     hostname: netbird-routing-peer
     restart: unless-stopped
-    network_mode: host
+    networks:
+      - netbird-routing
+    ports:
+      - "51820:51820/udp"
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
@@ -127,12 +173,18 @@ services:
     environment:
       NB_MANAGEMENT_URL: https://netbird.example.com
       NB_SETUP_KEY: ${NB_SETUP_KEY:-}
+      NB_USE_NETSTACK_MODE: "true"
       NB_ENABLE_LOCAL_FORWARDING: ${NB_ENABLE_LOCAL_FORWARDING:-false}
     mem_limit: 512m
     cpus: 1.0
     stop_grace_period: 15s
     healthcheck:
-      test: ["CMD", "netbird", "status", "--check", "startup"]
+      test:
+        - CMD-SHELL
+        - >-
+          status="$$(netbird status 2>&1)" &&
+          echo "$$status" | grep -q "Management: Connected" &&
+          echo "$$status" | grep -q "Interface type: Userspace"
       interval: 30s
       timeout: 10s
       retries: 3
@@ -142,12 +194,24 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+networks:
+  netbird-routing:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.250.0/24
 ```
 
 说明：
 
 - `version: "2.4"` 兼容仍在使用 Docker Compose v1 的老服务器；现代 Compose 会忽略该字段。
-- `network_mode: host` 让 Routing Peer 直接使用宿主机 VPC 网络。
+- 独立 bridge 网络把 Routing Peer 与宿主机及业务容器的网络命名空间隔离；固定
+  子网必须替换为经过冲突检查的私网段。
+- UDP `51820` 映射用于直接 WireGuard 连接；同一主机部署多个 Peer 时必须为每个
+  实例规划不同监听端口。
+- `NB_USE_NETSTACK_MODE=true` 强制 Userspace 数据面，尤其适合 CentOS 7、旧内核
+  或 nftables / legacy iptables 混用的主机。
 - 三个 capability 和 `/dev/net/tun` 用于隧道、路由和防火墙管理。
 - bind mount 让身份目录位置明确，便于备份、巡检和灾备恢复。
 - 身份目录包含 Peer 私钥，备份必须加密并限制读取权限；只能在原 Peer 已离线时恢复同一身份，不能复制给两台同时在线的节点。
@@ -196,6 +260,7 @@ docker exec netbird-routing-peer netbird status
 Management: Connected
 Signal: Connected
 NetBird IP: 100.x.x.x/16
+Interface type: Userspace
 ```
 
 ### 6.3 从容器环境中移除 Key
@@ -305,6 +370,7 @@ docker stats --no-stream netbird-routing-peer
 
 - 容器为 `healthy`。
 - Management、Signal 和 Relay 可用。
+- `Interface type` 明确为 `Userspace`。
 - `Networks` 显示目标 VPC 网段。
 - 容器没有持续重启。
 
@@ -332,6 +398,15 @@ nc -vz 192.168.1.20 443
 ```
 
 不要只用 `ping` 验收。至少验证一个真实 TCP、HTTPS、SSH 或数据库端口。
+
+访问 Routing Peer 的公网 IP 只能证明公网入口和业务服务健康，不能证明请求走过
+NetBird。VPN 验收必须请求 Network Resource 对应的私网地址或域名，并同时观察
+Routing Peer 传输计数或抓包结果。
+
+若 Windows 本地 LAN 是 `192.168.1.0/24`，而远端只发布
+`192.168.0.0/16`，最长前缀匹配会优先选择本地 `/24`。此时即使请求成功，也
+可能访问的是本地同名地址。应优先发布目标 `/32`，或选一个与本地 LAN 不重叠的
+真实测试目标；必要时在 VPC 内临时启动受控测试端口，验收后立即删除。
 
 ### 9.3 非授权客户端
 
@@ -367,9 +442,10 @@ docker exec netbird-routing-peer netbird status \
 
 ### 9.6 与宿主机 iptables / nftables 冲突
 
-如果 Routing Peer 启动后，同机其他容器或 K8S Pod 出现外联、远端 NodePort、
-监控 remote-write 超时，而 DNS、ClusterIP 或 Pod IP 仍然正常，不要把
-`netbird status` 显示 Connected 当作宿主机网络无影响的证明。
+如果 Routing Peer 启动后，同机其他 bridge 容器同时出现 Docker 内置 DNS
+`127.0.0.11` 超时、外部数据库连接失败或 SNAT 异常，不要把 `netbird status`
+显示 Connected 当作宿主机网络无影响的证明。一个很强的因果证据是：只停止
+Routing Peer、完全不重启业务容器后，业务 DNS 和 TCP 立即恢复。
 
 先保存基线并观察实际数据面：
 
@@ -377,13 +453,14 @@ docker exec netbird-routing-peer netbird status \
 iptables-save > /data/netbird-client/backup/incident-iptables.rules
 nft list ruleset > /data/netbird-client/backup/incident-nftables.rules
 ip route show > /data/netbird-client/backup/incident-routes.txt
-netbird status
+docker exec netbird-routing-peer netbird status
 ```
 
 CentOS 7、旧内核和 legacy iptables 环境尤其需要防止 nftables / iptables
 后端混用。NetBird 社区 issue #2015 的处置建议是用
-`NB_SKIP_NFTABLES_CHECK=true` 绕过不可用的 nftables 探测；但在 K8S 节点上，
-更稳妥的隔离方式通常是让容器化 Routing Peer 使用完整用户态数据面：
+`NB_SKIP_NFTABLES_CHECK=true` 绕过不可用的 nftables 探测，但它不是宿主机隔离
+方案。Standalone Docker Routing Peer 应同时使用独立 bridge 网络和完整用户态
+数据面：
 
 ```yaml
 environment:
@@ -399,8 +476,9 @@ env:
 ```
 
 上线顺序应当是：先仅保留一台 Routing Peer、确认 `Interface type:
-Userspace` 和真实业务 TCP、再恢复第二台。持久化文件之外还应准备一个只隔离
-故障节点的回滚入口；不要用重启 Flannel、kube-proxy 或业务 Pod 掩盖问题。
+Userspace`、VPC 真实业务 TCP 和同机业务容器 DNS/TCP，再恢复第二台。若出现
+回归，先执行 `docker compose stop routing-peer` 隔离单一变量；不要清空防火墙、
+重启 Docker 或重启业务容器掩盖问题。
 用户态模式有吞吐上限，峰值带宽要求较高时应做压测，并用多个独立 Peer
 扩展容量。
 
@@ -433,11 +511,16 @@ ss -lntup
 docker stats --no-stream
 ```
 
+重复执行上线前选定的业务容器 DNS 和 TCP 探针至少三次，并比较业务容器的
+`StartedAt` 和 `RestartCount`。验收要求是 Routing Peer 上线后业务仍成功，且
+业务容器没有被重启。
+
 要求：
 
 - 不重启、不重建现有业务容器。
 - 不修改业务 Compose 项目。
 - Routing Peer 只新增自己的容器、状态目录和必要转发规则。
+- 宿主机不新增 NetBird nftables 表或 NetBird 专属 iptables 链。
 - CPU、内存和日志增长符合预期。
 
 ## 12. 回滚

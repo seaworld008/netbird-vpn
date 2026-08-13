@@ -248,14 +248,17 @@ Legacy 部署中可以保留经过验证的 Caddy、Coturn、PostgreSQL 和外�
 把路由节点与服务端 Compose 分开，避免更新服务端时误删或重建数据平面。示例：
 
 ```yaml
-name: netbird-routing
+version: "2.4"
 
 services:
   routing-peer:
     image: netbirdio/netbird:0.76.3
     container_name: netbird-routing-peer
     restart: unless-stopped
-    network_mode: host
+    networks:
+      - netbird-routing
+    ports:
+      - "51820:51820/udp"
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
@@ -267,8 +270,34 @@ services:
     environment:
       NB_MANAGEMENT_URL: https://netbird.example.com
       NB_SETUP_KEY: ${NB_SETUP_KEY:-}
+      NB_USE_NETSTACK_MODE: "true"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >-
+          status="$$(netbird status 2>&1)" &&
+          echo "$$status" | grep -q "Management: Connected" &&
+          echo "$$status" | grep -q "Interface type: Userspace"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+networks:
+  netbird-routing:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.250.0/24
 
 ```
+
+在承载其他 Docker 业务的主机上，独立 bridge 网络和
+`NB_USE_NETSTACK_MODE=true` 必须同时使用：前者隔离宿主机网络命名空间，后者
+让 NetBird 数据面使用 Userspace。只开启 Netstack 但仍使用 host 网络，NetBird
+仍可能修改宿主机 nftables / iptables，导致其他 bridge 容器的 DNS、SNAT 或外联
+异常。固定子网只是示例，上线前必须确认它不与 VPC、宿主机路由、其他 Docker
+网络和客户端 LAN 重叠。
 
 首次注册时临时传入 Setup Key：
 
@@ -293,6 +322,8 @@ Setup Key 过期只影响注册新 Peer，不影响已经注册的 Peer。长期
 - 升级某个 Compose 项目时不要附带 `--remove-orphans` 去影响另一项目。
 - 独立命名卷或明确 bind mount 必须有备份；删除身份数据会丢失 Routing Peer 身份。
 - 路由节点要开启 `net.ipv4.ip_forward=1`。
+- 运行后必须确认 `Interface type: Userspace`，并回归同机业务容器的 DNS 和真实
+  TCP 外联；`netbird status` 仅显示 Connected 不足以证明无副作用。
 - `Masquerade` 默认开启可减少目标内网的回程路由配置；关闭时必须在 VPC 路由表中配置返回 NetBird 网段的路由。
 - Docker Compose v1 若在重建时遇到容器名冲突，先核对容器归属，再仅停止并删除该 Routing Peer 容器。不要使用 `down -v` 或跨项目的 `--remove-orphans`。
 
