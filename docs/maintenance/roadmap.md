@@ -12,6 +12,7 @@
 - 身份源、设备姿态、Setup Key 自动化、托管 K8S 云厂商差异。
 - VPC 单主机精确授权、跨平台客户端接入、Legacy 外部 IdP 升级。
 - 云 VPC 容器化 Routing Peer、持久身份、密钥清除和双云连通验收。
+- Kubernetes 集群内 Routing Peer、Operator / 手工方案选型、分阶段发布、旧内核 Netstack 兼容和监控回归。
 - 日常运维、监控审计、备份、升级、回滚。
 - 上游版本跟踪、文档治理、AI Agent 维护说明。
 
@@ -47,6 +48,7 @@
 - 修复失效链接、错误菜单路径、错误命令。
 - 新增案例必须有验证和回滚。
 - 所有 YAML 代码块必须能被解析。
+- K8S 网络文档必须区分 DNS、TCP、CNI、SNAT 和应用错误，不只验证 Peer Ready。
 
 ### P1：补齐生产化能力
 
@@ -55,6 +57,7 @@
 - Public API 自动化专项：创建用户、邀请用户、Setup Key、资源、策略的安全脚本范式。
 - 审计专项：Activity、用户生命周期、Setup Key 使用、临时策略关闭。
 - 灾备专项：备份恢复演练、跨主机恢复、DNS 切换、RPO/RTO。
+- Routing Peer 容量专项：结合官方 sizing 数据补充压测模板、CPU / 吞吐基线和容量告警。
 
 ### P2：增强企业级实践
 

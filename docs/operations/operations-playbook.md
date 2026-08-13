@@ -209,6 +209,11 @@ curl -k -I https://<target>
 - 路由节点本机是否能访问目标。
 - `ip_forward` 是否开启。
 
+如果 Routing Peer 运行在 Kubernetes 内，不要停在这里。继续按
+[Kubernetes 集群内 Routing Peer 生产运维手册](kubernetes-routing-peer-runbook.md)
+比较上线前后 CNI、宿主机 SNAT、远端 NodePort、业务 Pod 外联和监控
+remote-write。`Connected` 不能证明集群原有网络无回归。
+
 ### 5.3 服务端 / Dashboard 侧
 
 检查：

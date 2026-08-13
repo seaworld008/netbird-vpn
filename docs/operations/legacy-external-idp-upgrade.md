@@ -89,13 +89,13 @@ find "$BACKUP_DIR" -type f -print0 | sort -z | xargs -0 sha256sum \
 ```yaml
 services:
   dashboard:
-    image: netbirdio/dashboard:v2.90.9
+    image: netbirdio/dashboard:v2.90.10
   signal:
-    image: netbirdio/signal:0.76.1
+    image: netbirdio/signal:0.76.3
   relay:
-    image: netbirdio/relay:0.76.1
+    image: netbirdio/relay:0.76.3
   management:
-    image: netbirdio/management:0.76.1
+    image: netbirdio/management:0.76.3
 ```
 
 先做静态检查：

@@ -57,7 +57,7 @@ git ls-remote https://github.com/netbirdio/netbird.git HEAD refs/heads/main
 - Access Control：https://docs.netbird.io/manage/access-control/manage-network-access
 - Setup Keys：https://docs.netbird.io/manage/peers/register-machines-using-setup-keys
 - Reverse Proxy：https://docs.netbird.io/manage/reverse-proxy
-- Kubernetes Routing Peers：https://docs.netbird.io/use-cases/cloud/routing-peers-and-kubernetes
+- Kubernetes Routing Peers：https://docs.netbird.io/use-cases/kubernetes/routing-peers-and-kubernetes
 - Kubernetes Operator：https://docs.netbird.io/manage/integrations/kubernetes
 
 ## 5. 兼容性判断口径

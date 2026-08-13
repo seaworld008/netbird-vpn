@@ -295,7 +295,7 @@ curl -I http://<pod-ip>
 
 ## 12. 官方参考
 
-- K8S Routing Peers：https://docs.netbird.io/use-cases/cloud/routing-peers-and-kubernetes
+- K8S Routing Peers：https://docs.netbird.io/use-cases/kubernetes/routing-peers-and-kubernetes
 - Kubernetes Operator：https://docs.netbird.io/manage/integrations/kubernetes
 - Routing Peer CRD：https://docs.netbird.io/manage/integrations/kubernetes/routing-peer
 - Routing Peers 原理：https://docs.netbird.io/manage/networks/how-routing-peers-work

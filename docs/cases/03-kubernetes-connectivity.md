@@ -525,171 +525,44 @@ kubectl --kubeconfig ./prod-k8s-netbird.kubeconfig get ns
 
 注意：不要把大量不同用途的域名资源和大 CIDR 资源混在同一个 Network 里。域名资源建议单独管理，避免策略边界变得模糊。
 
-## 12. 方案 B：把 NetBird 路由 Peer 跑在 K8S 集群里
+## 12. 方案 B：把 NetBird Routing Peer 跑在 K8S 集群里
 
-这个方案适合你想让集群内的 Pod 作为路由 Peer，专门暴露 Pod / Service 资源。
+这个方案适合访问 Pod / Service 网络，但它会把 NetBird 数据面带进 Kubernetes
+节点，必须比普通 Deployment 更谨慎。
 
-使用前确认：
+生产决策顺序：
 
-- 集群允许创建带 `NET_ADMIN`、`SYS_RESOURCE`、`SYS_ADMIN` capabilities 的 Pod。
-- CNI 允许这个 Pod 访问目标 Pod / Service。
-- 你已经在 NetBird 中创建了 Setup Key，并自动加入 `k8s-routing-peers`。
-- 如果是生产环境，建议先在测试 namespace 验证。
+1. 只暴露具体 ClusterIP Service，优先使用第 13 节的官方 Operator。
+2. 旧集群暂时不能引入 CRD / webhook，或需要整个 Pod / Service CIDR，再使用
+   手工 Routing Peer。
+3. 需要同时访问大量 Node、数据库和 VPC 资源，优先回到方案 A 的独立 VM。
 
-### 12.1 完整 Deployment YAML
+手工方案的生产要求：
 
-保存为 `k8s-netbird-router.yaml`：
+- 只在显式选定的两个节点运行，不默认覆盖整个集群。
+- 每个实例拥有独立 Peer 身份，并把 `/var/lib/netbird` 持久化到对应节点。
+- Setup Key 放进 Secret，不写入 YAML；限制有效期、usage limit 和 Auto Group。
+- 先单实例上线，验证 CNI、远端 NodePort、Pod 外联和监控写入，再恢复第二实例。
+- Linux 默认保留内核数据面；只有旧内核 / netfilter 冲突证据充分时才启用
+  `NB_USE_NETSTACK_MODE=true`。
+- 必须准备只隔离一个可疑节点的回滚，不先重启 Flannel、kube-proxy 或业务 Pod。
 
-```yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: netbird
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: netbird-setup-key
-  namespace: netbird
-type: Opaque
-stringData:
-  NB_SETUP_KEY: "NBSETUP-K8S-GW-REPLACE-ME"
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: netbird-k8s-router
-  namespace: netbird
-  labels:
-    app: netbird-k8s-router
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: netbird-k8s-router
-  template:
-    metadata:
-      labels:
-        app: netbird-k8s-router
-    spec:
-      terminationGracePeriodSeconds: 30
-      containers:
-        - name: netbird
-          image: netbirdio/netbird:0.76.1
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: NB_SETUP_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: netbird-setup-key
-                  key: NB_SETUP_KEY
-            - name: NB_MANAGEMENT_URL
-              value: "https://netbird.example.com"
-            - name: NB_HOSTNAME
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: NB_LOG_LEVEL
-              value: "info"
-          securityContext:
-            allowPrivilegeEscalation: true
-            capabilities:
-              add:
-                - NET_ADMIN
-                - SYS_RESOURCE
-                - SYS_ADMIN
-          resources:
-            requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
-              cpu: 500m
-              memory: 512Mi
-          livenessProbe:
-            exec:
-              command:
-                - netbird
-                - status
-                - --check
-                - live
-            initialDelaySeconds: 10
-            periodSeconds: 20
-            timeoutSeconds: 5
-            failureThreshold: 3
-          readinessProbe:
-            exec:
-              command:
-                - netbird
-                - status
-                - --check
-                - ready
-            initialDelaySeconds: 10
-            periodSeconds: 20
-            timeoutSeconds: 5
-            failureThreshold: 3
-          startupProbe:
-            exec:
-              command:
-                - netbird
-                - status
-                - --check
-                - startup
-            periodSeconds: 5
-            timeoutSeconds: 10
-            failureThreshold: 30
-```
+完整、可复制的 Namespace、DaemonSet、Secret 创建、节点标签、分阶段上线、
+授权/非授权验收、监控检查和回滚流程见：
 
-必须修改：
+- [Kubernetes 集群内 Routing Peer 生产运维手册](../operations/kubernetes-routing-peer-runbook.md)
 
-- `NB_SETUP_KEY`：换成你自己的 Setup Key。
-- `NB_MANAGEMENT_URL`：换成你的 NetBird 域名。
-- `image`：固定到团队验证过的明确版本。升级时修改标签并重新部署，不在生产环境使用漂移标签。
+不要只把普通 Deployment 的 `replicas` 改成 3 就当作完成高可用。还需要独立
+身份、不同故障域、Routing Peer group、metric、Masquerade、节点分散和业务
+回归。现代集群使用 Operator 时，这些能力可以由 `NetworkRouter`、副本策略和
+PodDisruptionBudget 更一致地管理。
 
-应用：
+下面任一条件成立，就先使用方案 A：
 
-```bash
-kubectl apply -f k8s-netbird-router.yaml
-kubectl -n netbird rollout status deployment/netbird-k8s-router
-kubectl -n netbird get pod -l app=netbird-k8s-router -o wide
-kubectl -n netbird logs -l app=netbird-k8s-router --tail=100
-```
-
-Dashboard 中应该能看到新的 Peer，主机名类似：
-
-```text
-netbird-k8s-router-xxxxxxxxxx-yyyyy
-```
-
-### 12.2 高可用副本数
-
-验证单副本稳定后，可以改：
-
-```yaml
-spec:
-  replicas: 3
-```
-
-然后执行：
-
-```bash
-kubectl apply -f k8s-netbird-router.yaml
-kubectl -n netbird rollout status deployment/netbird-k8s-router
-```
-
-注意：
-
-- 多副本必须配合 NetBird 里的 routing peer group 使用。
-- 如果不开 Masquerade，多副本回程会复杂很多，新手不要这样做。
-- Pod 重建后 Peer 名称会变化，建议 Setup Key 使用 ephemeral peers，避免离线旧 Peer 堆积。
-
-### 12.3 什么时候不适合用集群内 Deployment
-
-下面任一条件成立，就先用方案 A：
-
-- 集群禁止特权能力或 PodSecurity 拦截 `NET_ADMIN`。
-- 你不确定 CNI 是否允许该 Pod 转发到目标网段。
-- 你还没有跑通 API Server 内网访问。
-- 你需要同时访问大量 Node 级别地址、云数据库、VPC 内其他服务。
+- 集群禁止 `NET_ADMIN`、`SYS_ADMIN`、`SYS_RESOURCE`。
+- 无法证明候选节点上的现有业务 Pod 在上线前网络正常。
+- 不清楚 CNI、kube-proxy 或 NetworkPolicy 的实际实现。
+- 无法监控业务 Pod 外联和 remote-write，也没有明确回滚窗口。
 
 ## 13. 可选：使用 NetBird Kubernetes Operator
 
@@ -792,6 +665,59 @@ Operator 更自动，但依赖 NetBird API token、CRD、webhook、DNS Zone。�
 
 如果不确定怎么配置云路由表，先保持 Masquerade 开启。
 
+### 14.6 Routing Peer 启动后，同节点 Pod 外联或监控写入超时
+
+这类故障不一定是 DNS。先从同一 Pod 分别验证 ClusterIP、Pod IP、远端
+NodePort 和一个已知可用的外部 TCP / HTTP 端点：
+
+```bash
+kubectl exec -n app deploy/example -- \
+  curl --noproxy '*' -fsS --connect-timeout 5 http://10.96.10.20:8080/health
+kubectl exec -n app deploy/example -- \
+  curl --noproxy '*' -fsS --connect-timeout 5 http://10.244.4.20:8080/health
+kubectl exec -n app deploy/example -- \
+  curl --noproxy '*' -fsS --connect-timeout 5 http://10.60.0.12:30080/health
+kubectl exec -n app deploy/example -- \
+  curl --noproxy '*' -fsS --connect-timeout 5 https://metrics.example.com/health
+```
+
+如果域名能解析、ClusterIP 和 Pod IP 可达，但远端 NodePort 或外部端点超时，
+优先检查宿主机 SNAT 和防火墙后端，不要先重启 CoreDNS：
+
+```bash
+netbird status
+iptables -t nat -nvL POSTROUTING
+nft list ruleset
+conntrack -L -p tcp 2>/dev/null | tail -50
+```
+
+在 CentOS 7、旧内核或 legacy iptables 集群里，容器内 NetBird 检测到 nftables
+后可能与宿主机 Flannel 的 iptables SNAT 发生冲突。社区 issue #2015 记录过
+NetBird 启动后其他容器无法联网的同类现象。先做可逆验证：临时把 Routing
+Peer 从故障节点移除，确认业务 Pod 无需重启即可恢复，再决定持久化方案。
+
+对必须在这类节点运行的容器化 Routing Peer，可以强制使用 NetBird 官方
+支持的用户态 Netstack：
+
+```yaml
+env:
+  - name: NB_USE_NETSTACK_MODE
+    value: "true"
+```
+
+Netstack 会让路由数据面避开宿主机内核防火墙转发路径，适合处理内核模块缺失
+或与其他网络软件冲突的环境。它会牺牲一部分峰值吞吐，因此应先在一台路由
+Peer 上验证，再滚动恢复第二台。除非确实需要访问 Routing Peer 自身局域网
+地址上的服务，否则不要顺带开启 `NB_ENABLE_LOCAL_FORWARDING`。
+
+验收至少包含：
+
+1. 每个 Routing Peer 的 `netbird status` 都显示 `Interface type: Userspace`。
+2. Pod CIDR 和 Service CIDR 都显示在 `Networks` 中。
+3. 故障节点上的业务 Pod 能访问 ClusterIP、远端 NodePort 和外部监控端点。
+4. 监控 remote-write 队列回落并持续发送。
+5. 宿主机没有新增 NetBird nftables 表，Flannel MASQUERADE 计数继续增长。
+
 ## 15. 推荐上线顺序
 
 按这个顺序来，最容易定位问题：
@@ -847,7 +773,9 @@ sudo systemctl stop netbird
 
 - Networks / Routing Peer 原理：https://docs.netbird.io/manage/networks/how-routing-peers-work
 - Network Routes 说明：https://docs.netbird.io/manage/network-routes
-- Kubernetes Routing Peers：https://docs.netbird.io/use-cases/cloud/routing-peers-and-kubernetes
+- Kubernetes Routing Peers：https://docs.netbird.io/use-cases/kubernetes/routing-peers-and-kubernetes
 - Kubernetes Operator：https://docs.netbird.io/manage/integrations/kubernetes
 - Kubernetes Operator Routing Peer：https://docs.netbird.io/manage/integrations/kubernetes/routing-peer
 - Access Control：https://docs.netbird.io/manage/access-control/manage-network-access
+- Client 环境变量：https://docs.netbird.io/client/environment-variables
+- CentOS 7 nftables / iptables 同类问题：https://github.com/netbirdio/netbird/issues/2015

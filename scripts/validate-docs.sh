@@ -75,7 +75,7 @@ print(f"parsed yaml blocks: {count}")
 PY
 
 echo "==> Checking stale version markers"
-if rg -n "v0\\.71\\.4|v0\\.73\\.2|2026-06-05|2026-07-01|512899d82|0358be2|how-to/networks|use-cases/setup-site-to-site-access" . --glob '!scripts/validate-docs.sh' --glob '!docs/decisions/ADR-001-documentation-operating-model.md'; then
+if rg -n "v0\\.71\\.4|v0\\.73\\.2|v0\\.76\\.1|v2\\.90\\.9|2026-06-05|2026-07-01|512899d82|0358be2|how-to/networks|use-cases/setup-site-to-site-access|use-cases/cloud/routing-peers-and-kubernetes" . --glob '!scripts/validate-docs.sh' --glob '!docs/decisions/ADR-001-documentation-operating-model.md'; then
   echo "Found stale version markers or old official-doc paths" >&2
   exit 1
 fi
@@ -85,6 +85,41 @@ if rg -n "image:\\s*[^#[:space:]]+:latest([[:space:]]|$)" . --glob '*.yml' --glo
   echo "Found a production image using the latest tag" >&2
   exit 1
 fi
+
+echo "==> Checking Setup Key placeholders"
+python - <<'PY'
+from pathlib import Path
+import re
+import sys
+
+files = [*Path(".").rglob("*.md"), *Path(".").rglob("*.yml"), *Path(".").rglob("*.yaml")]
+bad = []
+
+for file in files:
+    if ".git" in file.parts:
+        continue
+    text = file.read_text(encoding="utf-8")
+    for number, line in enumerate(text.splitlines(), 1):
+        for token in re.findall(r"NBSETUP-[A-Za-z0-9._-]+", line):
+            if not token.endswith("REPLACE-ME"):
+                bad.append(f"{file}:{number}: possible real Setup Key: {token[:16]}...")
+
+        match = re.search(r"NB_SETUP_KEY\s*:\s*[\"']?([^\"'#\s]+)", line)
+        if not match:
+            continue
+        value = match.group(1)
+        allowed = (
+            value.startswith("${")
+            or value.endswith("REPLACE-ME")
+            or value in {"<key>", "YOUR_SETUP_KEY"}
+        )
+        if not allowed:
+            bad.append(f"{file}:{number}: NB_SETUP_KEY must use Secret reference or placeholder")
+
+if bad:
+    print("\n".join(bad), file=sys.stderr)
+    raise SystemExit(1)
+PY
 
 echo "==> Checking patch whitespace"
 git diff --check

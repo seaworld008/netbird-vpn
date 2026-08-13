@@ -23,6 +23,7 @@
 
 - `operations/`
   - `containerized-routing-peer-runbook.md`：云 VPC 容器化 Routing Peer、持久身份、Setup Key 清除、双云验收和回滚
+  - `kubernetes-routing-peer-runbook.md`：集群内 Routing Peer、双节点身份、分阶段上线、Netstack 兼容、监控验证和局部隔离
   - `firewall-and-hardening.md`：阿里云安全组、端口与安全加固
   - `operations-playbook.md`：日常运维、备份、升级、回滚与排障 SOP
   - `monitoring-and-audit.md`：服务端、路由节点、客户端巡检、审计与告警建议
@@ -37,6 +38,7 @@
 - `decisions/`
   - `ADR-001-documentation-operating-model.md`：文档运营模型的长期决策记录
   - `ADR-002-pinned-images-and-routing-peer-isolation.md`：固定镜像版本与隔离 Routing Peer 的长期决策
+  - `ADR-003-kubernetes-routing-peer-safety-model.md`：Kubernetes Routing Peer 的选型、发布、验证和兼容数据面决策
 
 - `templates/`
   - `case-template.md`：新增场景文档时使用的标准模板

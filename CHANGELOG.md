@@ -2,9 +2,19 @@
 
 ## Unreleased
 
+## 0.3.0 - 2026-08-13
+
+- 新增 Kubernetes 集群内 Routing Peer 生产运维手册，覆盖 Operator / VM / 手工 DaemonSet 选型、双节点独立身份、短期受限 Setup Key、节点标签、持久化和分阶段发布
+- 新增 Pod IP、ClusterIP、远端 NodePort、Pod 外联与监控 remote-write 联合回归，明确 DNS 成功不等于 TCP、SNAT 和应用链路正常
+- 增加 CentOS 7、旧内核、legacy iptables / nftables 冲突诊断与 `NB_USE_NETSTACK_MODE=true` 兼容路径，并说明吞吐取舍和适用边界
+- 增加单节点快速隔离、声明式恢复、首次注册后清理 Secret / Setup Key，以及不重启 CNI、kube-proxy、业务 Pod 的排障原则
+- 新增 ADR-003，固定 Kubernetes Routing Peer 的安全选型、分阶段上线、独立身份、监控验证和兼容数据面决策
+- 重构 K8S 场景的集群内方案，移除“Deployment 直接扩到 3 副本即生产 HA”的简化表述，改为 Operator 优先和完整运维手册入口
+- 扩展监控与 AI agent 操作规范，要求同时验证 NetBird 状态、原有集群网络和业务监控数据面
+- 更新 2026-08-13 上游稳定版基线：NetBird `v0.76.3`、Dashboard `v2.90.10`
+- 增强文档校验，阻止旧稳定版、旧 Kubernetes 官方路径、真实 Setup Key、明文 Setup Key Secret 和生产 `latest` 镜像回流
 - 新增云 VPC 容器化 Routing Peer 实操手册，覆盖独立 Compose、固定镜像、持久身份、Setup Key 清除、旧 Compose v1 重建、双云验收和回滚
 - 补充 Setup Key 过期不影响已注册 Peer、用户授权需核对实际设备分组，以及 Routing Peer 自身地址需要独立输入链路策略的说明
-- 更新 2026-08-04 上游稳定版基线：NetBird `v0.76.1`、Dashboard `v2.90.9`
 - 新增 Legacy 外部 IdP 架构升级、备份校验、分阶段发布和回滚手册
 - 新增 VPC `/32` 精确授权、域名资源兜底、策略验收和 WireGuard 共存案例
 - 新增 Windows、macOS、Linux 客户端安装、升级与一次性 Setup Key 接入手册

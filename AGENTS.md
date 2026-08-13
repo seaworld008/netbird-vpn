@@ -58,6 +58,7 @@
     │   └── 12-client-platform-onboarding.md
     ├── operations/
     │   ├── containerized-routing-peer-runbook.md
+    │   ├── kubernetes-routing-peer-runbook.md
     │   ├── firewall-and-hardening.md
     │   ├── operations-playbook.md
     │   ├── monitoring-and-audit.md
@@ -69,7 +70,8 @@
     │   └── roadmap.md
     ├── decisions/
     │   ├── ADR-001-documentation-operating-model.md
-    │   └── ADR-002-pinned-images-and-routing-peer-isolation.md
+    │   ├── ADR-002-pinned-images-and-routing-peer-isolation.md
+    │   └── ADR-003-kubernetes-routing-peer-safety-model.md
     └── templates/
         └── case-template.md
 ```
@@ -160,7 +162,31 @@ cp docs/templates/case-template.md docs/cases/NN-your-case.md
 - 不要忽略非授权用户验证。
 - 不要只写 `ping` 作为验证，很多策略没有放 ICMP。
 
-## 8. 官方文档优先级
+## 8. Kubernetes Routing Peer 操作红线
+
+处理集群内 Routing Peer 时，必须先读：
+
+- `docs/operations/kubernetes-routing-peer-runbook.md`
+- `docs/decisions/ADR-003-kubernetes-routing-peer-safety-model.md`
+
+操作顺序不可跳过：
+
+1. 只读记录节点、Pod CIDR、Service CIDR、CNI、kube-proxy、iptables / nftables 和业务网络基线。
+2. 明确选择 Operator、独立 VM 或手工 DaemonSet，不默认把高权限 Pod 铺到所有节点。
+3. 手工方案先只启用一个 Routing Peer，验证 Pod IP、ClusterIP、远端 NodePort、Pod 外联和监控 remote-write。
+4. 单节点无回归后再恢复第二个 Peer；每个实例必须使用独立持久身份。
+5. 故障时优先只隔离可疑节点上的 Routing Peer，保留另一个 Peer，不先重启 CNI、kube-proxy 或业务 Pod。
+6. 只有隔离实验证明旧内核 / netfilter 兼容问题时，才持久化 `NB_USE_NETSTACK_MODE=true`。
+
+禁止：
+
+- 仅凭 `Pod Ready`、`netbird status Connected` 或 `ping` 宣布上线成功。
+- 把 Setup Key 明文写入 YAML、日志、仓库或长期保留为无限次 Key。
+- 把同一 `/var/lib/netbird` 身份复制给两个同时在线的 Routing Peer。
+- 为了排障直接清空 iptables、覆盖 nftables、重启 Flannel / kube-proxy 或修改业务 Deployment。
+- 无证据地把 DNS 解析成功等同于 TCP、SNAT 和监控写入正常。
+
+## 9. 官方文档优先级
 
 写 NetBird 行为时，优先参考：
 
@@ -173,12 +199,14 @@ cp docs/templates/case-template.md docs/cases/NN-your-case.md
 - https://docs.netbird.io/manage/access-control/manage-network-access
 - https://docs.netbird.io/manage/peers/register-machines-using-setup-keys
 - https://docs.netbird.io/manage/reverse-proxy
-- https://docs.netbird.io/use-cases/cloud/routing-peers-and-kubernetes
+- https://docs.netbird.io/use-cases/kubernetes/routing-peers-and-kubernetes
 - https://docs.netbird.io/manage/integrations/kubernetes
+- https://docs.netbird.io/client/environment-variables
+- https://docs.netbird.io/help/troubleshooting-resource-connectivity
 
 如果官方页面路径变化，更新所有相关引用，并运行校验。
 
-## 9. 本地校验
+## 10. 本地校验
 
 每次提交前执行：
 
@@ -198,9 +226,10 @@ bash scripts/validate-docs.sh
 - Markdown 代码围栏。
 - YAML 代码块解析。
 - 旧版本号和旧官方路径残留。
+- 真实 Setup Key、明文 Kubernetes Secret 和漂移镜像标签。
 - `git diff --check`。
 
-## 10. 提交流程建议
+## 11. 提交流程建议
 
 ```bash
 git checkout -b codex/<short-topic>
@@ -218,8 +247,9 @@ PR 描述至少包含：
 - 是否核对官方最新版本。
 - 执行了哪些校验。
 - 是否做过真实部署测试。
+- 如果涉及 K8S Routing Peer，列出基线、单节点、双节点、业务和监控回归结果。
 
-## 11. 安全要求
+## 12. 安全要求
 
 禁止提交：
 
@@ -241,7 +271,7 @@ netbird.example.com
 grafana.proxy.example.com
 ```
 
-## 12. 后续优先补齐方向
+## 13. 后续优先补齐方向
 
 维护者或 AI agent 可以优先补：
 
