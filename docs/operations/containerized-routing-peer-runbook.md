@@ -43,7 +43,7 @@ Network Resource Policy 允许流量经过 Routing Peer 到达它后面的资源
 | 部署目录 | `/data/netbird-client` |
 | Compose 服务名 | `routing-peer` |
 | 容器名 | `netbird-routing-peer` |
-| 镜像 | `netbirdio/netbird:0.76.1` |
+| 镜像 | `netbirdio/netbird:0.76.3` |
 | Management URL | `https://netbird.example.com` |
 | Routing Peer Group | `cloud-a-routing-peers` |
 | 用户设备访问组 | `cloud-a-access` |
@@ -55,7 +55,7 @@ Network Resource Policy 允许流量经过 Routing Peer 到达它后面的资源
 生产环境可以把同一版本镜像同步到内网仓库，例如：
 
 ```text
-registry.example.com/netbird/netbird:0.76.1
+registry.example.com/netbird/netbird:0.76.3
 ```
 
 无论使用公共仓库还是内网仓库，都要保留明确版本标签，并在变更记录中保存镜像 digest。
@@ -111,7 +111,7 @@ version: "2.4"
 
 services:
   routing-peer:
-    image: netbirdio/netbird:0.76.1
+    image: netbirdio/netbird:0.76.3
     container_name: netbird-routing-peer
     hostname: netbird-routing-peer
     restart: unless-stopped
@@ -160,7 +160,7 @@ services:
 cd /data/netbird-client
 docker compose config
 docker compose pull
-docker image inspect netbirdio/netbird:0.76.1 \
+docker image inspect netbirdio/netbird:0.76.3 \
   --format 'id={{.Id}} digests={{json .RepoDigests}}'
 ```
 
@@ -365,6 +365,45 @@ docker exec netbird-routing-peer netbird status \
 
 若没有访问 Routing Peer 本机服务的业务需求，保持默认关闭并使用独立管理入口。
 
+### 9.6 与宿主机 iptables / nftables 冲突
+
+如果 Routing Peer 启动后，同机其他容器或 K8S Pod 出现外联、远端 NodePort、
+监控 remote-write 超时，而 DNS、ClusterIP 或 Pod IP 仍然正常，不要把
+`netbird status` 显示 Connected 当作宿主机网络无影响的证明。
+
+先保存基线并观察实际数据面：
+
+```bash
+iptables-save > /data/netbird-client/backup/incident-iptables.rules
+nft list ruleset > /data/netbird-client/backup/incident-nftables.rules
+ip route show > /data/netbird-client/backup/incident-routes.txt
+netbird status
+```
+
+CentOS 7、旧内核和 legacy iptables 环境尤其需要防止 nftables / iptables
+后端混用。NetBird 社区 issue #2015 的处置建议是用
+`NB_SKIP_NFTABLES_CHECK=true` 绕过不可用的 nftables 探测；但在 K8S 节点上，
+更稳妥的隔离方式通常是让容器化 Routing Peer 使用完整用户态数据面：
+
+```yaml
+environment:
+  NB_USE_NETSTACK_MODE: "true"
+```
+
+Kubernetes 清单对应写法：
+
+```yaml
+env:
+  - name: NB_USE_NETSTACK_MODE
+    value: "true"
+```
+
+上线顺序应当是：先仅保留一台 Routing Peer、确认 `Interface type:
+Userspace` 和真实业务 TCP、再恢复第二台。持久化文件之外还应准备一个只隔离
+故障节点的回滚入口；不要用重启 Flannel、kube-proxy 或业务 Pod 掩盖问题。
+用户态模式有吞吐上限，峰值带宽要求较高时应做压测，并用多个独立 Peer
+扩展容量。
+
 ## 10. 与其他 VPN 共存
 
 Windows 同时运行 NetBird 和另一个 WireGuard VPN 通常可行，关键是路由不能冲突：
@@ -441,3 +480,5 @@ docker compose up -d routing-peer
 - Networks：https://docs.netbird.io/manage/networks
 - Masquerade：https://docs.netbird.io/manage/networks/masquerade
 - Access Control：https://docs.netbird.io/manage/access-control/manage-network-access
+- Client 环境变量：https://docs.netbird.io/client/environment-variables
+- CentOS 7 nftables / iptables 同类问题：https://github.com/netbirdio/netbird/issues/2015

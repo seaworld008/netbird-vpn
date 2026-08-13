@@ -64,7 +64,44 @@ curl -k -I --connect-timeout 5 https://10.20.10.20
 
 预期非授权失败。
 
-## 5. 简单巡检脚本
+## 5. Kubernetes Routing Peer 联合巡检
+
+集群内 Routing Peer 不能只监控自己的 Ready / Connected。至少联合检查：
+
+```bash
+kubectl -n netbird-routing get daemonset,pod -o wide
+kubectl -n netbird-routing logs \
+  -l app.kubernetes.io/name=netbird-k8s-routing-peer --since=15m \
+  | grep -Ei 'error|panic|firewall|netlink|route' || true
+```
+
+再从 Routing Peer 所在节点的普通业务 Pod 验证：
+
+```bash
+kubectl -n demo exec deploy/example -- \
+  curl --noproxy '*' -fsS --connect-timeout 5 http://10.96.10.20:8080/health
+kubectl -n demo exec deploy/example -- \
+  curl --noproxy '*' -fsS --connect-timeout 5 http://10.60.0.12:30080/health
+kubectl -n demo exec deploy/example -- \
+  curl --noproxy '*' -fsS --connect-timeout 5 https://metrics.example.com/health
+```
+
+监控系统还应记录 remote-write 的成功请求、错误请求和待发送队列。判断恢复时，
+不能只看待发送队列为零；还要确认成功发送计数在两个采样点之间持续增长。
+
+建议告警：
+
+| 告警 | 建议条件 |
+| --- | --- |
+| Routing Peer 副本不足 | 期望副本与 Ready 副本不一致超过 3 分钟 |
+| Peer 失去 Network | `netbird status` 不再显示预期 CIDR |
+| 业务 Pod 远端 NodePort 失败 | 连续 3 次 TCP / HTTP 检查失败 |
+| remote-write 停止 | 成功计数 5 分钟不增长或待发送队列持续增长 |
+| 网络后端异常 | NetBird 日志出现持续 firewall / netlink 错误 |
+
+完整上线、隔离和回滚流程见 [Kubernetes 集群内 Routing Peer 生产运维手册](kubernetes-routing-peer-runbook.md)。
+
+## 6. 简单巡检脚本
 
 保存为 `netbird-smoke-check.sh`：
 
@@ -94,7 +131,7 @@ chmod +x netbird-smoke-check.sh
 NETBIRD_URL=https://netbird.example.com ./netbird-smoke-check.sh
 ```
 
-## 6. Dashboard 审计重点
+## 7. Dashboard 审计重点
 
 建议每周检查：
 
@@ -107,7 +144,7 @@ NETBIRD_URL=https://netbird.example.com ./netbird-smoke-check.sh
 | `Settings > Setup Keys` | 是否有长期可用、无限次数、无人负责的 key |
 | `Control Center` | 拓扑中是否出现异常访问关系 |
 
-## 7. 变更审计模板
+## 8. 变更审计模板
 
 每次变更记录：
 
@@ -125,7 +162,7 @@ NETBIRD_URL=https://netbird.example.com ./netbird-smoke-check.sh
 - 结果：
 ```
 
-## 8. 告警建议
+## 9. 告警建议
 
 如果接入 Prometheus、Zabbix、Uptime Kuma 或云监控，可以配置：
 
@@ -138,7 +175,7 @@ NETBIRD_URL=https://netbird.example.com ./netbird-smoke-check.sh
 | 关键资源端口不可达 | 连续 3 次失败 |
 | Setup Key 长期未轮换 | 超过 30 或 90 天，按环境定 |
 
-## 9. Setup Key 巡检
+## 10. Setup Key 巡检
 
 重点找：
 
@@ -155,7 +192,7 @@ NETBIRD_URL=https://netbird.example.com ./netbird-smoke-check.sh
 3. Revoke 旧 key。
 4. 检查是否有异常新 Peer。
 
-## 10. 安全事件初步响应
+## 11. 安全事件初步响应
 
 如果怀疑账号或 key 泄露：
 
@@ -176,11 +213,11 @@ sudo systemctl stop netbird
 
 然后在 Dashboard 删除该 Peer，并替换 Setup Key。
 
-## 11. 巡检和告警回滚
+## 12. 巡检和告警回滚
 
 监控脚本、告警规则和审计流程也要能回滚，尤其是第一次上线时，避免错误告警刷屏或错误脚本误判生产故障。
 
-### 11.1 回滚 cron 巡检
+### 12.1 回滚 cron 巡检
 
 如果你把巡检脚本放进 cron，先查看：
 
@@ -194,7 +231,7 @@ crontab -l
 crontab -l
 ```
 
-### 11.2 回滚 systemd timer
+### 12.2 回滚 systemd timer
 
 如果你使用 systemd timer：
 
@@ -206,7 +243,7 @@ sudo systemctl status netbird-smoke.timer
 
 只停止 timer，不会删除脚本文件。确认告警停止后，再决定是否删除脚本。
 
-### 11.3 回滚错误告警规则
+### 12.3 回滚错误告警规则
 
 如果告警规则误报：
 
@@ -224,7 +261,7 @@ curl -I https://netbird.example.com
 netbird status
 ```
 
-### 11.4 回滚泄露的通知凭据
+### 12.4 回滚泄露的通知凭据
 
 如果巡检脚本里使用了 Webhook、API token 或邮件密码，并怀疑泄露：
 
@@ -234,7 +271,7 @@ netbird status
 4. 检查 Git、CI 日志、终端历史里是否出现旧凭据。
 5. 记录凭据轮换时间和影响范围。
 
-## 12. 官方参考
+## 13. 官方参考
 
 - Control Center：https://docs.netbird.io/manage/control-center
 - Access Control：https://docs.netbird.io/manage/access-control/manage-network-access

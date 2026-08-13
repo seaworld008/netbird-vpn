@@ -115,6 +115,9 @@ metadata:
 - 是否忽略 DNS / HTTPS 证书域名问题。
 - 是否只验证授权用户，没有验证非授权用户。
 - 是否没有回滚步骤。
+- K8S Routing Peer 是否只看 Ready / Connected，没有验证原有 Pod 外联、远端 NodePort 和监控写入。
+- 是否把 Netstack 当成所有 Linux 的默认，而没有说明兼容场景和性能取舍。
+- Setup Key 是否写进 YAML，或长期使用无限次 Reusable Key。
 
 ## 9. 推荐迭代方向
 

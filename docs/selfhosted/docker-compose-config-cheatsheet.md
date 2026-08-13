@@ -220,18 +220,16 @@ docker compose up -d
 
 ## 8. 生产镜像标签清单
 
-本次核对的稳定基线是 NetBird `0.76.1`、Dashboard `v2.90.9`。下面只展示标签写法，不是可直接覆盖现有拓扑的完整 Compose：
+本次核对的稳定基线是 NetBird `0.76.3`、Dashboard `v2.90.10`。新安装使用
+combined `netbird-server`；下面只展示标签写法，不是可直接覆盖现有拓扑的完整
+Compose：
 
 ```yaml
 services:
   dashboard:
-    image: netbirdio/dashboard:v2.90.9
-  signal:
-    image: netbirdio/signal:0.76.1
-  relay:
-    image: netbirdio/relay:0.76.1
-  management:
-    image: netbirdio/management:0.76.1
+    image: netbirdio/dashboard:v2.90.10
+  netbird-server:
+    image: netbirdio/netbird-server:0.76.3
 ```
 
 升级前后都保存镜像清单：
@@ -241,7 +239,9 @@ docker compose config --images | sort | tee compose-images.txt
 docker compose images
 ```
 
-同一部署中可以保留经过验证的 Caddy、Coturn、PostgreSQL 和外部 IdP 版本。不要把一次 NetBird 核心升级扩大成所有基础组件同时升级。
+只有存量 Legacy 多容器环境才更新独立 `management`、`signal`、`relay`。同一
+Legacy 部署中可以保留经过验证的 Caddy、Coturn、PostgreSQL 和外部 IdP 版本。
+不要把一次 NetBird 核心升级扩大成所有基础组件同时升级。
 
 ## 9. Routing Peer 使用独立 Compose 项目和持久身份
 
@@ -252,7 +252,7 @@ name: netbird-routing
 
 services:
   routing-peer:
-    image: netbirdio/netbird:0.76.1
+    image: netbirdio/netbird:0.76.3
     container_name: netbird-routing-peer
     restart: unless-stopped
     network_mode: host
