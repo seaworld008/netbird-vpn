@@ -23,6 +23,12 @@ Accepted
 5. 升级不使用可能跨项目清理容器的操作；核心服务与 Routing Peer 分阶段更新。
 6. 每次更新保存 `docker compose config --images` 输出、备份校验和业务验收记录。
 7. Routing Peer 的长期身份来自持久化的 `/var/lib/netbird`；不使用永不过期 Setup Key 代替身份目录备份。
+8. 在承载其他业务容器的主机上，Standalone Routing Peer 默认使用独立 Docker
+   bridge 网络和 `NB_USE_NETSTACK_MODE=true`，不使用 host 网络。
+9. `Netstack` 与网络命名空间隔离是两层不同控制。仅启用 Netstack 但继续共享
+   宿主机网络命名空间，不视为完成隔离。
+10. host 网络仅允许用于专用路由主机，并要求有防火墙规则差异、同机业务 DNS、
+    SNAT 和 TCP 回归证据。
 
 ## Alternatives Considered
 
@@ -38,12 +44,20 @@ Accepted
 
 重建方便，但 Peer 身份已经持久化后无需继续保存注册凭据，故不采用。
 
+### 在多用途 Docker 主机上使用 host 网络
+
+直接访问 VPC 路径简单，但 Routing Peer 的防火墙探测或规则变更会进入宿主机
+网络命名空间。旧内核或 nftables / legacy iptables 混用时，可能破坏其他 bridge
+容器的 DNS 和 SNAT，故不作为默认方案。
+
 ## Consequences
 
 - 上游发布新版本后不会自动升级，需要维护者主动核对和变更标签。
 - Routing Peer 可以独立升级、回滚和做主备切换。
 - 灾备必须同时覆盖管理面数据和 Routing Peer 身份目录。
 - 版本清单、备份、验收成为每次升级的必做项。
+- 独立 bridge 多一层 Docker 转发，峰值吞吐需要压测；直接连接所需 UDP 端口要
+  显式映射。
 
 ## Follow-up
 

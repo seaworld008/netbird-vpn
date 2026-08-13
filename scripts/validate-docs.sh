@@ -62,15 +62,37 @@ except ImportError:
     raise SystemExit(1)
 
 count = 0
+host_network_peers = []
 for file in Path(".").rglob("*.md"):
     text = file.read_text(encoding="utf-8")
     for block in re.findall(r"^```ya?ml\s*\n(.*?)^```", text, re.MULTILINE | re.DOTALL):
         count += 1
         try:
-            list(yaml.safe_load_all(block))
+            documents = list(yaml.safe_load_all(block))
         except yaml.YAMLError as error:
             print(f"YAML error in {file}: {error}", file=sys.stderr)
             raise SystemExit(1)
+        for document in documents:
+            if not isinstance(document, dict):
+                continue
+            services = document.get("services", {})
+            if not isinstance(services, dict):
+                continue
+            for name, service in services.items():
+                if not isinstance(service, dict):
+                    continue
+                image = str(service.get("image", "")).lower()
+                is_netbird_peer = (
+                    "routing" in str(name).lower()
+                    or image.startswith("netbirdio/netbird:")
+                    or "/netbird:" in image
+                )
+                if is_netbird_peer and service.get("network_mode") == "host":
+                    host_network_peers.append(f"{file}: service {name}")
+if host_network_peers:
+    print("NetBird Routing Peer production examples must not use host networking:", file=sys.stderr)
+    print("\n".join(host_network_peers), file=sys.stderr)
+    raise SystemExit(1)
 print(f"parsed yaml blocks: {count}")
 PY
 

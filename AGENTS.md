@@ -186,7 +186,31 @@ cp docs/templates/case-template.md docs/cases/NN-your-case.md
 - 为了排障直接清空 iptables、覆盖 nftables、重启 Flannel / kube-proxy 或修改业务 Deployment。
 - 无证据地把 DNS 解析成功等同于 TCP、SNAT 和监控写入正常。
 
-## 9. 官方文档优先级
+## 9. Standalone 容器化 Routing Peer 操作红线
+
+在同时承载其他 Docker 业务的 Linux 主机上部署 Routing Peer 时，必须先读：
+
+- `docs/operations/containerized-routing-peer-runbook.md`
+- `docs/decisions/ADR-002-pinned-images-and-routing-peer-isolation.md`
+
+默认使用独立 Docker bridge 网络和 `NB_USE_NETSTACK_MODE=true`。Netstack 只改变
+隧道数据面，不能替代容器网络命名空间隔离；不得把 host 网络写成多用途主机的
+默认生产示例。
+
+上线前后必须验证：
+
+1. `Interface type: Userspace`，Management、Signal 和 Relay 正常。
+2. 同机业务容器从容器内部执行 DNS 和真实 TCP 外联均成功。
+3. 业务容器 `StartedAt` 和 `RestartCount` 没有变化。
+4. 客户端请求的是私网 Resource，而不是 Routing Peer 的公网 IP。
+5. 客户端 LAN、其他 VPN、Docker subnet 和 VPC Resource 不重叠；若重叠，按
+   最长前缀确认真实路径并优先改为 `/32`。
+6. 请求前后 Routing Peer 传输计数增长，必要时用抓包确认数据平面。
+
+故障时先只停止 Routing Peer，观察业务是否在不重启的情况下恢复。禁止先清空
+iptables / nftables、重启 Docker 或重启业务容器。
+
+## 10. 官方文档优先级
 
 写 NetBird 行为时，优先参考：
 
@@ -206,7 +230,7 @@ cp docs/templates/case-template.md docs/cases/NN-your-case.md
 
 如果官方页面路径变化，更新所有相关引用，并运行校验。
 
-## 10. 本地校验
+## 11. 本地校验
 
 每次提交前执行：
 
@@ -227,9 +251,10 @@ bash scripts/validate-docs.sh
 - YAML 代码块解析。
 - 旧版本号和旧官方路径残留。
 - 真实 Setup Key、明文 Kubernetes Secret 和漂移镜像标签。
+- NetBird Routing Peer 生产 YAML 中的 host 网络模式。
 - `git diff --check`。
 
-## 11. 提交流程建议
+## 12. 提交流程建议
 
 ```bash
 git checkout -b codex/<short-topic>
@@ -248,8 +273,10 @@ PR 描述至少包含：
 - 执行了哪些校验。
 - 是否做过真实部署测试。
 - 如果涉及 K8S Routing Peer，列出基线、单节点、双节点、业务和监控回归结果。
+- 如果涉及 Standalone Routing Peer，列出 Userspace、业务容器 DNS/TCP、容器
+  重启次数、私网数据平面和回滚隔离结果。
 
-## 12. 安全要求
+## 13. 安全要求
 
 禁止提交：
 
@@ -271,7 +298,7 @@ netbird.example.com
 grafana.proxy.example.com
 ```
 
-## 13. 后续优先补齐方向
+## 14. 后续优先补齐方向
 
 维护者或 AI agent 可以优先补：
 
