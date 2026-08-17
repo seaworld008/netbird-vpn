@@ -410,6 +410,27 @@ kubectl get pod -A -o wide
 还要从目标节点上的普通业务 Pod 重做 DNS 和真实 TCP 外联，并核对监控
 remote-write。验收不能只看 Pod Ready、Peer Connected 或 `ping`。
 
+### 12.5 固定版本升级验收
+
+先把官方固定镜像同步到团队私有仓库并记录摘要，再进入维护窗口。只替换本
+Deployment 的镜像标签，不同时修改 CNI、kube-proxy、Docker WireGuard、身份目录
+或 Network Resource。
+
+`kubectl rollout status` 成功后仍要等待完整收敛：
+
+```bash
+kubectl -n netbird-routing exec deployment/netbird-targeted-egress -- \
+  netbird status
+kubectl -n netbird-routing exec deployment/netbird-targeted-egress -- \
+  netbird status -d
+```
+
+确认版本、原 NetBird IP、FQDN、IP Resource、Domain Resource 和 Userspace 接口
+全部恢复，再从授权客户端请求目标域名和 `/32` IP。客户端应走 NetBird 虚拟接口，
+真实 HTTPS/TCP 成功，且 Routing Peer 对应客户端的传输计数增长。最后比较已有
+WireGuard 的 `StartedAt` / `RestartCount`、宿主机路由/规则/防火墙结构、系统 Pod
+状态和监控 remote-write。
+
 ## 13. 常见故障
 
 ### 13.1 IP 可访问，域名不通

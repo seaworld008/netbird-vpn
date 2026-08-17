@@ -21,6 +21,9 @@
 - 补充授权客户端、非授权客户端、目标侧来源 IP、Routing Peer 计数和宿主机 /
   集群无回归联合验收，明确公网目标直接可达不能证明策略泄漏
 - 更新 2026-08-17 上游稳定版基线：NetBird `v0.77.0`、Dashboard `v2.91.1`
+- 记录 `v0.77.0` 真实升级验证：Legacy 外部 IdP 控制面最小重建、固定镜像同步到
+  私有仓库、Standalone 与 Kubernetes Routing Peer 逐个升级，以及 Ready 后资源
+  收敛和授权客户端传输计数复核
 - 扩展文档校验，阻止 Kubernetes NetBird 生产 YAML 使用 host 网络、定向出口
   代码块配置默认路由以及旧稳定版重新进入当前文档
 

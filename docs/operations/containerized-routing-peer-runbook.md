@@ -374,6 +374,11 @@ docker stats --no-stream netbird-routing-peer
 - `Networks` 显示目标 VPC 网段。
 - 容器没有持续重启。
 
+`netbird status --check startup` 或 `--check ready` 通过后仍要继续观察。Peer 重建
+后的短时间内可能已经 Connected，但 Network Resources、Peer 列表和系统路由尚未
+收敛。只有原 NetBird IP、FQDN、`Networks`、目标路由和真实 TCP 全部恢复，才能
+判定升级完成并继续更新第二个 Peer。
+
 ### 9.2 Windows 授权客户端
 
 管理员 PowerShell：

@@ -120,6 +120,32 @@ docker compose up -d --no-deps dashboard
 
 服务名要按现有 Compose 调整。不要在包含其他业务容器的目录执行 `down -v`，也不要使用会误删其他 Compose 项目容器的 `--remove-orphans`。
 
+切换前先从独立客户端连续探测 Dashboard、未授权 API 和 OIDC discovery。不要只在
+服务器本机探测，否则反向代理、DNS 或公网入口故障可能被漏掉：
+
+```bash
+while true; do
+  date -Ins
+  curl -sk -o /dev/null -w 'dashboard=%{http_code}\n' \
+    https://netbird.example.com/
+  curl -sk -o /dev/null -w 'api=%{http_code}\n' \
+    https://netbird.example.com/api/users
+  curl -sk -o /dev/null -w 'oidc=%{http_code}\n' \
+    https://netbird.example.com/.well-known/openid-configuration
+  sleep 1
+done
+```
+
+若服务器保留了已经失效的本地代理环境变量，`curl` 会把代理失败误报成 NetBird
+服务失败。先记录代理配置，再用不经过代理的命令复核；不要为了排障直接删除全局
+代理配置：
+
+```bash
+env -u HTTP_PROXY -u HTTPS_PROXY -u ALL_PROXY \
+    -u http_proxy -u https_proxy -u all_proxy \
+  curl --noproxy '*' -skI https://netbird.example.com/
+```
+
 ## 6. 验收矩阵
 
 | 层级 | 验证 | 通过标准 |
@@ -134,7 +160,38 @@ docker compose up -d --no-deps dashboard
 
 不要只用 `ping` 判定失败。云主机或目标服务可能禁用 ICMP，但 TCP 端口仍然正常。
 
-## 7. 回滚
+## 7. 已验证的最小中断执行模式
+
+以下是一次从上一稳定版本升级到 NetBird `0.77.0` / Dashboard `v2.91.1` 的脱敏
+实测结果，用于说明验证方法，不是所有环境都能达到的中断 SLA：
+
+- 先拉取并记录四个目标镜像摘要，再进入切换窗口。
+- 配置、Management 数据、两个 SQLite 数据库和外部 PostgreSQL 均做备份；
+  SQLite `integrity_check`、PostgreSQL dump 结束标记和 SHA256 全部通过。
+- 为获得一致的数据卷副本，Management 短暂停止约 1 秒；外围 IdP、数据库、
+  Caddy 和 Coturn 不重建。
+- 只重建 Management、Signal、Relay、Dashboard，Compose 操作约 5 秒；独立探针
+  观测到约 4.8 秒 `502`，随后恢复为 Dashboard `200`、未授权 API `401`、OIDC
+  discovery `200`。
+- 数据库完整性、表数量、迁移日志、容器重启次数和原有 Peer 连接均通过复核。
+
+Routing Peer 随后逐个升级。这里有一个容易误判的时序：
+`netbird status --check ready` 成功只说明守护进程和控制连接已经就绪，不保证
+Network Resources、Peer 列表、路由和转发路径已经收敛。实测中独立 Routing Peer
+曾短暂出现 `Networks: -`，随后才恢复原资源和路由。每个 Peer 都必须继续等待并
+核对：
+
+```bash
+docker exec netbird-routing-peer netbird status
+docker exec netbird-routing-peer netbird status -d
+ip route show
+nc -vz 192.0.2.10 443
+```
+
+通过标准是原 NetBird IP、FQDN、Network Resources 和身份文件保持不变，真实 TCP
+成功，且请求前后传输计数增长。只有这些条件都满足，才能继续升级下一个 Peer。
+
+## 8. 回滚
 
 触发条件包括持续重启、登录失败、策略丢失、既有 Peer 大面积离线或关键资源不可达。
 
@@ -153,7 +210,7 @@ docker compose ps
 
 不要默认回滚数据库。先确认升级是否真的写入了不兼容数据格式，避免用旧备份覆盖维护窗口后的有效变更。
 
-## 8. 升级记录模板
+## 9. 升级记录模板
 
 ```text
 变更时间：

@@ -15,6 +15,19 @@
 - 新部署继续使用官方 `releases/latest/download/getting-started.sh` 作为生成配置的入口。
 - 生产 Compose 必须把每个镜像固定到已验证标签，不能把 `latest` 当作部署版本。
 
+本仓库已完成以下 `v0.77.0` 脱敏生产路径验证：
+
+- Legacy 独立 Management / Signal / Relay 与外部 IdP 拓扑原地升级，Dashboard
+  同步升级到 `v2.91.1`，外围 IdP、数据库、Caddy 和 Coturn 保持原版本。
+- Standalone Routing Peer 保持原部署模型、身份和资源，只替换固定镜像标签。
+- Kubernetes Userspace Routing Peer 先验证单实例，再把双 Peer 按节点逐个升级；
+  NetBird IP、身份文件、Pod CIDR、Service CIDR 和真实 TCP 均保持正常。
+- 定向公网资源的单副本 Routing Peer 通过授权客户端 `/32` 路由、真实 HTTPS 和
+  Peer 传输计数增长验证，同机 Docker WireGuard 未重启。
+
+这表示上述路径已有真实升级证据，不表示所有发行版、CNI、内核和身份源组合都可
+跳过自己的备份与回归。
+
 脚本入口与生产镜像标签解决的是两个不同问题：脚本入口用于获取官方当前安装逻辑；固定标签用于保证重启、扩容和灾备恢复时不会无意升级。
 
 ## `v0.74` 到 `v0.77` 的关注点
