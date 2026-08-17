@@ -1,30 +1,37 @@
 # NetBird 上游版本状态
 
-> 最近核对时间：2026-08-13
+> 最近核对时间：2026-08-17
 
 ## 当前稳定基线
 
 | 组件 | 稳定版本 | 发布时间 | 核对依据 |
 | --- | --- | --- | --- |
-| NetBird Server / Client | `v0.76.3` | 2026-08-08 | GitHub `releases/latest`，`prerelease=false` |
-| NetBird Dashboard | `v2.90.10` | 2026-08-09 | Dashboard GitHub `releases/latest`，`prerelease=false` |
+| NetBird Server / Client | `v0.77.0` | 2026-08-13 | GitHub `releases/latest`，`prerelease=false` |
+| NetBird Dashboard | `v2.91.1` | 2026-08-14 | Dashboard GitHub `releases/latest`，`prerelease=false` |
 
-- NetBird release：https://github.com/netbirdio/netbird/releases/tag/v0.76.3
-- Dashboard release：https://github.com/netbirdio/dashboard/releases/tag/v2.90.10
-- 核对时 NetBird `main` HEAD：`e290769df10ceb7fd0176c9c8c2cca2d2d545c86`
+- NetBird release：https://github.com/netbirdio/netbird/releases/tag/v0.77.0
+- Dashboard release：https://github.com/netbirdio/dashboard/releases/tag/v2.91.1
+- 核对时 NetBird `main` HEAD：`4e5b63249032dbd099f0b103009546b51ac69430`
 - 新部署继续使用官方 `releases/latest/download/getting-started.sh` 作为生成配置的入口。
 - 生产 Compose 必须把每个镜像固定到已验证标签，不能把 `latest` 当作部署版本。
 
 脚本入口与生产镜像标签解决的是两个不同问题：脚本入口用于获取官方当前安装逻辑；固定标签用于保证重启、扩容和灾备恢复时不会无意升级。
 
-## `v0.74` 到 `v0.76` 的关注点
+## `v0.74` 到 `v0.77` 的关注点
 
 升级前应阅读跨越版本的完整 release notes。对本仓库场景影响较大的变化包括：
 
 - `v0.74` 增加 Agent Network 等能力，并继续演进连接和路由逻辑。
 - `v0.75` 更新桌面客户端界面和配置管理，并增强自建管理及网络能力。Windows 客户端升级后要复核服务、配置目录、Peer 身份和路由。
 - `v0.76.0` 是安全相关版本，旧部署不应长期停留在更早版本。
-- `v0.76.3` 是当前维护版本，包含连接唤醒、用户变更影响范围和 Reverse Proxy 授权等补丁。生产升级仍要经过备份、测试、分阶段替换和业务验收。
+- `v0.76.3` 包含连接唤醒、用户变更影响范围和 Reverse Proxy 授权等补丁。
+- `v0.77.0` 是当前稳定版本，继续演进 Agent Network、客户端路由、IPv6 转发和
+  调试信息匿名化。Routing Peer、Domain Resource、其他 WireGuard VPN 和旧内核
+  环境升级后必须重做真实数据面回归。
+- Dashboard `v2.91.1` 修复版本构建信息识别；前端升级后仍要核对显示版本与实际
+  镜像标签一致。
+
+生产升级仍要经过备份、测试、分阶段替换和业务验收。
 
 不要只看服务端容器是否为 `Up`。升级验收至少覆盖管理端登录、Peer 在线、直连/Relay、DNS、Routing Peer、授权资源、非授权资源和真实应用协议。
 
@@ -36,11 +43,11 @@ Relay 和 STUN 集中在 `netbird-server`。下面只展示版本标签，不是
 ```yaml
 services:
   dashboard:
-    image: netbirdio/dashboard:v2.90.10
+    image: netbirdio/dashboard:v2.91.1
   netbird-server:
-    image: netbirdio/netbird-server:0.76.3
+    image: netbirdio/netbird-server:0.77.0
   routing-peer:
-    image: netbirdio/netbird:0.76.3
+    image: netbirdio/netbird:0.77.0
 ```
 
 Legacy 多容器部署仍可能使用独立 `management`、`signal`、`relay`，并包含

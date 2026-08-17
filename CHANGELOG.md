@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+暂无未发布变更。
+
+## 0.4.0 - 2026-08-17
+
 - 将多用途 Docker 主机上的 Routing Peer 默认网络从 host 改为独立 bridge，并
   强制校验 Userspace 数据面，避免旧内核 nftables / iptables 冲突影响业务容器
 - 增加业务容器 DNS、SNAT、TCP 和重启次数的变更前后回归，以及只停止 Routing
@@ -10,6 +14,15 @@
   数据面可用
 - 增加客户端本地 LAN 与远端大网段重叠的最长前缀陷阱，以及 `/32`、传输计数和
   抓包联合验收方法
+- 新增 Kubernetes 定向公网资源固定出口案例，覆盖精确 IP / Domain Resource、
+  单节点固定公网出口、同机 Docker WireGuard 共存、一次性 Setup Key 和身份复用
+- 新增 ADR-004，固定“定向资源而非全局 Exit Node”、单副本 `Recreate`、独立
+  身份目录、Userspace 数据面和只缩容 Routing Peer 的回滚决策
+- 补充授权客户端、非授权客户端、目标侧来源 IP、Routing Peer 计数和宿主机 /
+  集群无回归联合验收，明确公网目标直接可达不能证明策略泄漏
+- 更新 2026-08-17 上游稳定版基线：NetBird `v0.77.0`、Dashboard `v2.91.1`
+- 扩展文档校验，阻止 Kubernetes NetBird 生产 YAML 使用 host 网络、定向出口
+  代码块配置默认路由以及旧稳定版重新进入当前文档
 
 ## 0.3.0 - 2026-08-13
 

@@ -55,7 +55,8 @@
     │   ├── 09-automation-with-setup-keys.md
     │   ├── 10-managed-kubernetes-clouds.md
     │   ├── 11-precision-vpc-access.md
-    │   └── 12-client-platform-onboarding.md
+    │   ├── 12-client-platform-onboarding.md
+    │   └── 18-kubernetes-targeted-public-egress.md
     ├── operations/
     │   ├── containerized-routing-peer-runbook.md
     │   ├── kubernetes-routing-peer-runbook.md
@@ -71,7 +72,8 @@
     ├── decisions/
     │   ├── ADR-001-documentation-operating-model.md
     │   ├── ADR-002-pinned-images-and-routing-peer-isolation.md
-    │   └── ADR-003-kubernetes-routing-peer-safety-model.md
+    │   ├── ADR-003-kubernetes-routing-peer-safety-model.md
+    │   └── ADR-004-targeted-public-egress-routing-peer-isolation.md
     └── templates/
         └── case-template.md
 ```
@@ -169,6 +171,11 @@ cp docs/templates/case-template.md docs/cases/NN-your-case.md
 - `docs/operations/kubernetes-routing-peer-runbook.md`
 - `docs/decisions/ADR-003-kubernetes-routing-peer-safety-model.md`
 
+若场景是“只让指定公网 IP / 域名走 Kubernetes 节点固定公网出口”，还必须读：
+
+- `docs/cases/18-kubernetes-targeted-public-egress.md`
+- `docs/decisions/ADR-004-targeted-public-egress-routing-peer-isolation.md`
+
 操作顺序不可跳过：
 
 1. 只读记录节点、Pod CIDR、Service CIDR、CNI、kube-proxy、iptables / nftables 和业务网络基线。
@@ -177,6 +184,8 @@ cp docs/templates/case-template.md docs/cases/NN-your-case.md
 4. 单节点无回归后再恢复第二个 Peer；每个实例必须使用独立持久身份。
 5. 故障时优先只隔离可疑节点上的 Routing Peer，保留另一个 Peer，不先重启 CNI、kube-proxy 或业务 Pod。
 6. 只有隔离实验证明旧内核 / netfilter 兼容问题时，才持久化 `NB_USE_NETSTACK_MODE=true`。
+7. 定向公网出口不创建默认路由；固定到单节点时使用单副本 `Deployment`、
+   `Recreate` 和独立身份目录。只有候选节点共享获准出口时才增加第二 Peer。
 
 禁止：
 

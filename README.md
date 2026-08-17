@@ -1,6 +1,6 @@
 # NetBird 自建部署与实践手册
 
-[![NetBird](https://img.shields.io/badge/NetBird-v0.76.3-00A3FF?logo=wireguard&logoColor=white)](https://github.com/netbirdio/netbird/releases/tag/v0.76.3)
+[![NetBird](https://img.shields.io/badge/NetBird-v0.77.0-00A3FF?logo=wireguard&logoColor=white)](https://github.com/netbirdio/netbird/releases/tag/v0.77.0)
 [![中文文档](https://img.shields.io/badge/docs-%E4%B8%AD%E6%96%87%E5%AE%9E%E8%B7%B5%E6%89%8B%E5%86%8C-brightgreen)](docs/README.md)
 [![Self Hosted](https://img.shields.io/badge/self--hosted-Docker%20Compose-2496ED?logo=docker&logoColor=white)](docs/selfhosted/quickstart-modern.md)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-ready-326CE5?logo=kubernetes&logoColor=white)](docs/cases/03-kubernetes-connectivity.md)
@@ -23,7 +23,7 @@
 - 服务端部署方式统一按 `docker-compose`
 - 文档重点放在“配置说明 + 场景落地 + 运维说明”
 - 场景文档按“原理、配置、验证、排障、回滚、扩展”组织，尽量让新手复制示例后能跑通
-- 最近一次上游版本核对：2026-08-13，官方最新稳定版为 NetBird `v0.76.3`、Dashboard `v2.90.10`
+- 最近一次上游版本核对：2026-08-17，官方最新稳定版为 NetBird `v0.77.0`、Dashboard `v2.91.1`
 
 ## 适合谁
 
@@ -65,6 +65,7 @@
 - [案例 10：托管 K8S 云厂商专项](docs/cases/10-managed-kubernetes-clouds.md)：ACK、EKS、GKE、AKS 落地差异
 - [案例 11：精确授权 VPC 内网资源](docs/cases/11-precision-vpc-access.md)：按 `/32` 授权、域名资源、策略验收与 WireGuard 共存
 - [案例 12：客户端安装、升级与 Setup Key 接入](docs/cases/12-client-platform-onboarding.md)：Windows、macOS、Linux 标准操作
+- [案例 18：Kubernetes 定向公网资源固定出口](docs/cases/18-kubernetes-targeted-public-egress.md)：指定公网 IP / 域名、固定白名单出口、WireGuard 共存和无回归验收
 
 ### 运维
 
@@ -85,6 +86,7 @@
 - [文档运营模型决策记录](docs/decisions/ADR-001-documentation-operating-model.md)
 - [固定镜像版本与隔离 Routing Peer 决策](docs/decisions/ADR-002-pinned-images-and-routing-peer-isolation.md)
 - [Kubernetes Routing Peer 安全发布决策](docs/decisions/ADR-003-kubernetes-routing-peer-safety-model.md)
+- [定向公网出口隔离决策](docs/decisions/ADR-004-targeted-public-egress-routing-peer-isolation.md)
 - [AI Agent 维护说明](AGENTS.md)
 
 ## 二、快速开始
@@ -109,7 +111,7 @@ export NETBIRD_DOMAIN=netbird.example.com
 curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting-started.sh | bash
 ```
 
-本仓库最近核对到的官方最新稳定版是 NetBird `v0.76.3`，Dashboard `v2.90.10`。首次安装脚本仍以 `releases/latest` 为入口；生产 Compose 中的镜像必须固定到经过验证的明确标签，见 [NetBird 上游版本状态](docs/selfhosted/upstream-version-status.md)。
+本仓库最近核对到的官方最新稳定版是 NetBird `v0.77.0`，Dashboard `v2.91.1`。首次安装脚本仍以 `releases/latest` 为入口；生产 Compose 中的镜像必须固定到经过验证的明确标签，见 [NetBird 上游版本状态](docs/selfhosted/upstream-version-status.md)。
 
 ### 3. 首次打开管理界面
 
@@ -220,7 +222,8 @@ NetBird 主线部署里，最常用的对外端口如下：
     │   ├── 09-automation-with-setup-keys.md
     │   ├── 10-managed-kubernetes-clouds.md
     │   ├── 11-precision-vpc-access.md
-    │   └── 12-client-platform-onboarding.md
+    │   ├── 12-client-platform-onboarding.md
+    │   └── 18-kubernetes-targeted-public-egress.md
     ├── operations/
     │   ├── containerized-routing-peer-runbook.md
     │   ├── kubernetes-routing-peer-runbook.md
@@ -236,7 +239,8 @@ NetBird 主线部署里，最常用的对外端口如下：
     ├── decisions/
     │   ├── ADR-001-documentation-operating-model.md
     │   ├── ADR-002-pinned-images-and-routing-peer-isolation.md
-    │   └── ADR-003-kubernetes-routing-peer-safety-model.md
+    │   ├── ADR-003-kubernetes-routing-peer-safety-model.md
+    │   └── ADR-004-targeted-public-egress-routing-peer-isolation.md
     └── templates/
         └── case-template.md
 ```

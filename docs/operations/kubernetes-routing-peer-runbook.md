@@ -36,11 +36,16 @@ CIDR 的环境。
 | 需要整个 Pod CIDR / Service CIDR | 手工 Routing Peer | 可按资源组和端口统一授权 |
 | 只需要 Kubernetes API | VPC / VM Routing Peer | 不必向集群加入高权限 Pod |
 | 需要访问大量 VPC 主机和云数据库 | VPC / VM Routing Peer | 集群内 Pod 不是合适的通用 VPC 网关 |
+| 指定公网 IP / 域名需要固定节点出口 | 单节点隔离 Deployment | 精确资源、固定公网出口，不接管其他互联网流量 |
 
 官方 Operator 的入门与 HA 示例见：
 
 - <https://docs.netbird.io/manage/integrations/kubernetes>
 - <https://docs.netbird.io/use-cases/kubernetes/route-to-a-kubernetes-service>
+
+最后一种场景使用独立的单节点安全模型，见
+[案例 18：Kubernetes 定向公网资源固定出口](../cases/18-kubernetes-targeted-public-egress.md)
+和 [ADR-004](../decisions/ADR-004-targeted-public-egress-routing-peer-isolation.md)。
 
 ## 3. 工作原理和故障边界
 
@@ -81,7 +86,7 @@ NetBird IP。
 | Pod CIDR | `10.244.0.0/16` |
 | Service CIDR | `10.96.0.0/12` |
 | 路由节点 | `worker-a`、`worker-b` |
-| 固定客户端镜像 | `netbirdio/netbird:0.76.3` |
+| 固定客户端镜像 | `netbirdio/netbird:0.77.0` |
 
 复制时必须换成真实网段、节点名、端口和团队已验证的固定镜像版本。
 
@@ -270,7 +275,7 @@ spec:
                       - "true"
       containers:
         - name: netbird
-          image: netbirdio/netbird:0.76.3
+          image: netbirdio/netbird:0.77.0
           imagePullPolicy: IfNotPresent
           env:
             - name: NODE_NAME

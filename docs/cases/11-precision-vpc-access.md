@@ -186,3 +186,7 @@ Windows 通常先按最长前缀匹配：NetBird 的目标 `/32` 会优先于另
 - https://docs.netbird.io/manage/networks/how-routing-peers-work
 - https://docs.netbird.io/manage/networks/masquerade
 - https://docs.netbird.io/manage/peers/register-machines-using-setup-keys
+
+如果目标是公网白名单系统，且只有指定公网 IP 或域名需要从 Kubernetes 节点的
+固定公网 IP 出口，使用[案例 18：Kubernetes 定向公网资源固定出口](./18-kubernetes-targeted-public-egress.md)，
+不要创建全局 Exit Node。

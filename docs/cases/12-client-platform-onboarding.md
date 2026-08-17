@@ -26,9 +26,9 @@
 在管理员 PowerShell 中校验安装包签名：
 
 ```powershell
-Get-AuthenticodeSignature .\netbird_installer_0.76.3_windows_amd64.msi |
+Get-AuthenticodeSignature .\netbird_installer_0.77.0_windows_amd64.msi |
   Format-List Status, StatusMessage, SignerCertificate
-Get-FileHash .\netbird_installer_0.76.3_windows_amd64.msi -Algorithm SHA256
+Get-FileHash .\netbird_installer_0.77.0_windows_amd64.msi -Algorithm SHA256
 ```
 
 安装后连接：

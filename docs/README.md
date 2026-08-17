@@ -20,6 +20,7 @@
   - `10-managed-kubernetes-clouds.md`：ACK、EKS、GKE、AKS 托管 K8S 差异和检查点
   - `11-precision-vpc-access.md`：按 `/32` 精确授权 VPC 主机、域名资源兜底、验收和 WireGuard 共存
   - `12-client-platform-onboarding.md`：Windows、macOS、Linux 安装升级和一次性 Setup Key 接入
+  - `18-kubernetes-targeted-public-egress.md`：Kubernetes 指定节点定向代理公网 IP / 域名、固定白名单出口和同机 WireGuard 无回归验收
 
 - `operations/`
   - `containerized-routing-peer-runbook.md`：云 VPC 容器化 Routing Peer、持久身份、Setup Key 清除、双云验收和回滚
@@ -39,6 +40,7 @@
   - `ADR-001-documentation-operating-model.md`：文档运营模型的长期决策记录
   - `ADR-002-pinned-images-and-routing-peer-isolation.md`：固定镜像版本与隔离 Routing Peer 的长期决策
   - `ADR-003-kubernetes-routing-peer-safety-model.md`：Kubernetes Routing Peer 的选型、发布、验证和兼容数据面决策
+  - `ADR-004-targeted-public-egress-routing-peer-isolation.md`：定向公网出口的精确资源、单节点固定出口和 Routing Peer 隔离决策
 
 - `templates/`
   - `case-template.md`：新增场景文档时使用的标准模板

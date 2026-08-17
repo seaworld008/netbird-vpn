@@ -63,8 +63,13 @@ except ImportError:
 
 count = 0
 host_network_peers = []
+targeted_default_routes = []
 for file in Path(".").rglob("*.md"):
     text = file.read_text(encoding="utf-8")
+    if file.name == "18-kubernetes-targeted-public-egress.md":
+        for block in re.findall(r"^```[^\n]*\n(.*?)^```", text, re.MULTILINE | re.DOTALL):
+            if "0.0.0.0/0" in block or "::/0" in block:
+                targeted_default_routes.append(str(file))
     for block in re.findall(r"^```ya?ml\s*\n(.*?)^```", text, re.MULTILINE | re.DOTALL):
         count += 1
         try:
@@ -76,28 +81,61 @@ for file in Path(".").rglob("*.md"):
             if not isinstance(document, dict):
                 continue
             services = document.get("services", {})
-            if not isinstance(services, dict):
-                continue
-            for name, service in services.items():
-                if not isinstance(service, dict):
-                    continue
-                image = str(service.get("image", "")).lower()
-                is_netbird_peer = (
-                    "routing" in str(name).lower()
-                    or image.startswith("netbirdio/netbird:")
-                    or "/netbird:" in image
+            if isinstance(services, dict):
+                for name, service in services.items():
+                    if not isinstance(service, dict):
+                        continue
+                    image = str(service.get("image", "")).lower()
+                    is_netbird_peer = (
+                        "routing" in str(name).lower()
+                        or image.startswith("netbirdio/netbird:")
+                        or "/netbird:" in image
+                    )
+                    if is_netbird_peer and service.get("network_mode") == "host":
+                        host_network_peers.append(f"{file}: service {name}")
+
+            kind = str(document.get("kind", ""))
+            spec = document.get("spec", {})
+            if kind == "Pod":
+                pod_spec = spec
+            elif kind in {"Deployment", "DaemonSet", "StatefulSet", "Job"}:
+                pod_spec = spec.get("template", {}).get("spec", {}) if isinstance(spec, dict) else {}
+            elif kind == "CronJob":
+                pod_spec = (
+                    spec.get("jobTemplate", {}).get("spec", {}).get("template", {}).get("spec", {})
+                    if isinstance(spec, dict)
+                    else {}
                 )
-                if is_netbird_peer and service.get("network_mode") == "host":
-                    host_network_peers.append(f"{file}: service {name}")
+            else:
+                pod_spec = {}
+
+            if not isinstance(pod_spec, dict):
+                continue
+            containers = pod_spec.get("containers", [])
+            is_netbird_peer = any(
+                isinstance(container, dict)
+                and (
+                    str(container.get("image", "")).lower().startswith("netbirdio/netbird:")
+                    or "/netbird:" in str(container.get("image", "")).lower()
+                )
+                for container in containers
+            )
+            if is_netbird_peer and pod_spec.get("hostNetwork") is True:
+                name = document.get("metadata", {}).get("name", "unnamed")
+                host_network_peers.append(f"{file}: {kind} {name}")
 if host_network_peers:
     print("NetBird Routing Peer production examples must not use host networking:", file=sys.stderr)
     print("\n".join(host_network_peers), file=sys.stderr)
+    raise SystemExit(1)
+if targeted_default_routes:
+    print("Targeted egress examples must not configure a default route in code blocks:", file=sys.stderr)
+    print("\n".join(sorted(set(targeted_default_routes))), file=sys.stderr)
     raise SystemExit(1)
 print(f"parsed yaml blocks: {count}")
 PY
 
 echo "==> Checking stale version markers"
-if rg -n "v0\\.71\\.4|v0\\.73\\.2|v0\\.76\\.1|v2\\.90\\.9|2026-06-05|2026-07-01|512899d82|0358be2|how-to/networks|use-cases/setup-site-to-site-access|use-cases/cloud/routing-peers-and-kubernetes" . --glob '!scripts/validate-docs.sh' --glob '!docs/decisions/ADR-001-documentation-operating-model.md'; then
+if rg -n "v0\\.71\\.4|v0\\.73\\.2|v0\\.76\\.1|v2\\.90\\.9|v0\\.76\\.3|v2\\.90\\.10|2026-06-05|2026-07-01|512899d82|0358be2|how-to/networks|use-cases/setup-site-to-site-access|use-cases/cloud/routing-peers-and-kubernetes" . --glob '!scripts/validate-docs.sh' --glob '!CHANGELOG.md' --glob '!docs/selfhosted/upstream-version-status.md' --glob '!docs/decisions/ADR-001-documentation-operating-model.md'; then
   echo "Found stale version markers or old official-doc paths" >&2
   exit 1
 fi
