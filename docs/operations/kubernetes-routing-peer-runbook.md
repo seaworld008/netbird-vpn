@@ -36,11 +36,16 @@ CIDR 的环境。
 | 需要整个 Pod CIDR / Service CIDR | 手工 Routing Peer | 可按资源组和端口统一授权 |
 | 只需要 Kubernetes API | VPC / VM Routing Peer | 不必向集群加入高权限 Pod |
 | 需要访问大量 VPC 主机和云数据库 | VPC / VM Routing Peer | 集群内 Pod 不是合适的通用 VPC 网关 |
+| 指定公网 IP / 域名需要固定节点出口 | 单节点隔离 Deployment | 精确资源、固定公网出口，不接管其他互联网流量 |
 
 官方 Operator 的入门与 HA 示例见：
 
 - <https://docs.netbird.io/manage/integrations/kubernetes>
 - <https://docs.netbird.io/use-cases/kubernetes/route-to-a-kubernetes-service>
+
+最后一种场景使用独立的单节点安全模型，见
+[案例 18：Kubernetes 定向公网资源固定出口](../cases/18-kubernetes-targeted-public-egress.md)
+和 [ADR-004](../decisions/ADR-004-targeted-public-egress-routing-peer-isolation.md)。
 
 ## 3. 工作原理和故障边界
 
@@ -81,7 +86,7 @@ NetBird IP。
 | Pod CIDR | `10.244.0.0/16` |
 | Service CIDR | `10.96.0.0/12` |
 | 路由节点 | `worker-a`、`worker-b` |
-| 固定客户端镜像 | `netbirdio/netbird:0.76.3` |
+| 固定客户端镜像 | `netbirdio/netbird:0.77.0` |
 
 复制时必须换成真实网段、节点名、端口和团队已验证的固定镜像版本。
 
@@ -270,7 +275,7 @@ spec:
                       - "true"
       containers:
         - name: netbird
-          image: netbirdio/netbird:0.76.3
+          image: netbirdio/netbird:0.77.0
           imagePullPolicy: IfNotPresent
           env:
             - name: NODE_NAME
@@ -616,6 +621,68 @@ kubectl -n netbird-routing logs \
 
 升级时先只更新一个 Peer，完成真实协议和集群无回归验证后再更新第二个。不要
 因为 Pod 显示 Ready 就跳过业务验证。
+
+### 14.1 同步固定镜像到私有仓库
+
+生产集群不能访问 Docker Hub 时，在能访问官方仓库且受控的机器拉取固定标签，
+核对镜像后再推送到私有仓库。能同时访问两个仓库时：
+
+```bash
+docker pull netbirdio/netbird:0.77.0
+docker image inspect netbirdio/netbird:0.77.0 \
+  --format '{{.Id}} {{json .RepoDigests}}'
+docker tag netbirdio/netbird:0.77.0 \
+  registry.example.com/netbird/netbird:0.77.0
+docker push registry.example.com/netbird/netbird:0.77.0
+docker image inspect registry.example.com/netbird/netbird:0.77.0 \
+  --format '{{.Id}} {{json .RepoDigests}}'
+```
+
+如果拉取机不能访问私有仓库，使用 `docker save` 导出、SHA256 校验和受控传输，
+再在已登录私有仓库的机器执行 `docker load`、`tag`、`push`。传输完成后删除临时
+归档，不要把仓库凭据或镜像 tar 提交到文档仓库。
+
+### 14.2 双 Peer 手动逐个升级
+
+DaemonSet 的普通 RollingUpdate 会在第一个 Pod 通过 readiness 后继续更新第二个。
+但 NetBird readiness 不等于 Network Resources 和真实转发已经收敛。维护窗口内可
+临时使用 `OnDelete`，每次只删除一个 Pod：
+
+```bash
+kubectl -n netbird-routing get daemonset,pod -o wide
+kubectl -n netbird-routing get daemonset netbird-k8s-routing-peer -o yaml \
+  > daemonset.before-upgrade.yaml
+
+kubectl -n netbird-routing patch daemonset netbird-k8s-routing-peer \
+  --type merge \
+  -p '{"spec":{"updateStrategy":{"type":"OnDelete","rollingUpdate":null}}}'
+kubectl -n netbird-routing set image daemonset/netbird-k8s-routing-peer \
+  netbird=registry.example.com/netbird/netbird:0.77.0
+
+kubectl -n netbird-routing delete pod <peer-on-worker-a>
+```
+
+第一个 Peer 重建后，至少核对：
+
+```bash
+kubectl -n netbird-routing exec <new-peer-on-worker-a> -- netbird status
+kubectl -n netbird-routing exec <new-peer-on-worker-a> -- netbird status -d
+kubectl -n netbird-routing exec <new-peer-on-worker-a> -- \
+  sha256sum /var/lib/netbird/default.json
+kubectl -n netbird-routing exec <new-peer-on-worker-a> -- \
+  nc -zvw5 10.96.0.1 443
+kubectl get nodes
+kubectl -n kube-system get pod -o wide
+```
+
+升级前后身份文件哈希、NetBird IP、FQDN 和 `Networks` 应一致；还要验证 Pod IP、
+ClusterIP、远端 NodePort、Pod 外联与监控 remote-write。全部通过后才删除第二个
+旧 Pod。两个 Peer 都完成后，把源清单镜像改成新固定标签，恢复原
+`RollingUpdate` / `maxUnavailable: 1` 并执行 `kubectl apply`。
+
+实测中 Routing Peer 在 readiness 成功后曾短暂显示 `Networks: -`。因此不要用
+`rollout status`、`Pod Ready` 或 `netbird status --check ready` 单独作为升级完成
+条件。
 
 ## 15. 官方和社区参考
 

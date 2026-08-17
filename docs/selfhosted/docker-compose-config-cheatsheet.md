@@ -220,16 +220,16 @@ docker compose up -d
 
 ## 8. 生产镜像标签清单
 
-本次核对的稳定基线是 NetBird `0.76.3`、Dashboard `v2.90.10`。新安装使用
+本次核对的稳定基线是 NetBird `0.77.0`、Dashboard `v2.91.1`。新安装使用
 combined `netbird-server`；下面只展示标签写法，不是可直接覆盖现有拓扑的完整
 Compose：
 
 ```yaml
 services:
   dashboard:
-    image: netbirdio/dashboard:v2.90.10
+    image: netbirdio/dashboard:v2.91.1
   netbird-server:
-    image: netbirdio/netbird-server:0.76.3
+    image: netbirdio/netbird-server:0.77.0
 ```
 
 升级前后都保存镜像清单：
@@ -252,7 +252,7 @@ version: "2.4"
 
 services:
   routing-peer:
-    image: netbirdio/netbird:0.76.3
+    image: netbirdio/netbird:0.77.0
     container_name: netbird-routing-peer
     restart: unless-stopped
     networks:

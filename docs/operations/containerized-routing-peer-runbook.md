@@ -59,7 +59,7 @@ nftables / iptables。
 | 部署目录 | `/data/netbird-client` |
 | Compose 服务名 | `routing-peer` |
 | 容器名 | `netbird-routing-peer` |
-| 镜像 | `netbirdio/netbird:0.76.3` |
+| 镜像 | `netbirdio/netbird:0.77.0` |
 | Management URL | `https://netbird.example.com` |
 | Routing Peer Group | `cloud-a-routing-peers` |
 | 用户设备访问组 | `cloud-a-access` |
@@ -72,7 +72,7 @@ nftables / iptables。
 生产环境可以把同一版本镜像同步到内网仓库，例如：
 
 ```text
-registry.example.com/netbird/netbird:0.76.3
+registry.example.com/netbird/netbird:0.77.0
 ```
 
 无论使用公共仓库还是内网仓库，都要保留明确版本标签，并在变更记录中保存镜像 digest。
@@ -154,7 +154,7 @@ version: "2.4"
 
 services:
   routing-peer:
-    image: netbirdio/netbird:0.76.3
+    image: netbirdio/netbird:0.77.0
     container_name: netbird-routing-peer
     hostname: netbird-routing-peer
     restart: unless-stopped
@@ -224,7 +224,7 @@ networks:
 cd /data/netbird-client
 docker compose config
 docker compose pull
-docker image inspect netbirdio/netbird:0.76.3 \
+docker image inspect netbirdio/netbird:0.77.0 \
   --format 'id={{.Id}} digests={{json .RepoDigests}}'
 ```
 
@@ -373,6 +373,11 @@ docker stats --no-stream netbird-routing-peer
 - `Interface type` 明确为 `Userspace`。
 - `Networks` 显示目标 VPC 网段。
 - 容器没有持续重启。
+
+`netbird status --check startup` 或 `--check ready` 通过后仍要继续观察。Peer 重建
+后的短时间内可能已经 Connected，但 Network Resources、Peer 列表和系统路由尚未
+收敛。只有原 NetBird IP、FQDN、`Networks`、目标路由和真实 TCP 全部恢复，才能
+判定升级完成并继续更新第二个 Peer。
 
 ### 9.2 Windows 授权客户端
 

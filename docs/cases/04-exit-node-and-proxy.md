@@ -18,6 +18,9 @@
 
 - 你要改变“用户访问互联网的出口”，用 Exit Node。
 - 你要发布“某个内部 Web 服务”，用 Reverse Proxy。
+- 只有指定公网 IP 或域名需要走白名单出口时，使用
+  [Kubernetes 定向公网资源固定出口](./18-kubernetes-targeted-public-egress.md)，
+  不要下发默认路由。
 
 ## 2. 场景 A：配置 Exit Node 固定公网出口
 

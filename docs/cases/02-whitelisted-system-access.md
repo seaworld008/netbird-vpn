@@ -386,6 +386,13 @@ temp-audit-202607
 
 如果接了 Google Workspace、Entra ID、Okta 等 IdP，可以把身份源组同步到 NetBird，再用这些组建策略。这样员工入职、转岗、离职后，权限能跟组织关系一起变化。
 
+### 14.4 公网白名单使用 Kubernetes 固定出口
+
+如果白名单目标是公网 IP 或域名，只有这些目标需要从 Kubernetes 指定节点的
+固定公网 IP 出口，使用
+[案例 18：Kubernetes 定向公网资源固定出口](./18-kubernetes-targeted-public-egress.md)。
+该场景使用精确 Network Resource，不应创建接管其他互联网流量的 Exit Node。
+
 ## 15. 官方参考
 
 - Routing Peers 原理：https://docs.netbird.io/manage/networks/how-routing-peers-work
