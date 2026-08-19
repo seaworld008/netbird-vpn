@@ -4,6 +4,17 @@
 
 暂无未发布变更。
 
+## 0.5.0 - 2026-08-19
+
+- 新增 `netbird-network-operator` 跨 Agent Skill，把仓库案例和脱敏实战经验组织为盘点、设计、预览、执行、验证、凭据收尾和回滚闭环
+- 增加 Codex 仓库级 `.agents/skills/` 权威入口、Claude Code `.claude/skills/` 兼容入口和 OpenAI UI 元数据，避免维护两套漂移规则
+- 将 NetBird Public API、官方 `community.ansible_netbird`、已登录 Dashboard、SSH / Docker / Kubernetes / 客户端 CLI 纳入统一执行面选择
+- 新增 Chrome 控制台专项工作流，要求复用用户现有已登录会话，覆盖 Groups、Policies、Networks、Routes、Setup Keys、Users 等页面盘点和精确复核
+- 明确浏览器控制面成功不等于网络打通，必须继续验证授权与非授权来源、真实协议、客户端路由、Routing Peer 计数、目标侧来源 IP 和无关业务无回归
+- 沉淀团队权限收敛、定向公网出口、Standalone / Kubernetes Routing Peer、Legacy 外部 IdP 升级、Setup Key 生命周期和应用错误归属等脱敏实战经验
+- 新增 ADR-005，固定跨 Agent 单一权威 Skill、授权门、幂等执行、Chrome 会话约束和数据面完成标准
+- 扩展文档校验，检查 Agent Skill frontmatter、名称、描述、Claude 兼容入口和 `agents/openai.yaml` 元数据
+
 ## 0.4.0 - 2026-08-17
 
 - 将多用途 Docker 主机上的 Routing Peer 默认网络从 host 改为独立 bridge，并

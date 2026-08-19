@@ -14,6 +14,7 @@
 - 云 VPC 容器化 Routing Peer、持久身份、密钥清除和双云连通验收。
 - Kubernetes 集群内 Routing Peer、Operator / 手工方案选型、分阶段发布、旧内核 Netstack 兼容和监控回归。
 - Kubernetes 定向公网 IP / 域名固定出口、同机 WireGuard 隔离、单节点身份复用和授权/非授权数据面验收。
+- 跨 Codex / Claude Code 的 NetBird 自动配置 Skill，覆盖 Public API、官方 Ansible、已登录 Chrome 控制台、主机执行、验证和回滚。
 - 日常运维、监控审计、备份、升级、回滚。
 - 上游版本跟踪、文档治理、AI Agent 维护说明。
 

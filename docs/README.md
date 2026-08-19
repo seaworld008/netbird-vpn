@@ -41,9 +41,15 @@
   - `ADR-002-pinned-images-and-routing-peer-isolation.md`：固定镜像版本与隔离 Routing Peer 的长期决策
   - `ADR-003-kubernetes-routing-peer-safety-model.md`：Kubernetes Routing Peer 的选型、发布、验证和兼容数据面决策
   - `ADR-004-targeted-public-egress-routing-peer-isolation.md`：定向公网出口的精确资源、单节点固定出口和 Routing Peer 隔离决策
+  - `ADR-005-agent-assisted-netbird-automation.md`：跨 Agent Skill、Chrome 控制台、API / Ansible 执行面、授权和验收决策
 
 - `templates/`
   - `case-template.md`：新增场景文档时使用的标准模板
+
+仓库根目录还包含：
+
+- `.agents/skills/netbird-network-operator/`：Codex 和其他兼容 Agent 使用的权威 NetBird 自动配置 Skill。
+- `.claude/skills/netbird-network-operator/`：Claude Code 项目级发现入口，加载同一权威 Skill。
 
 建议按以下顺序阅读：
 

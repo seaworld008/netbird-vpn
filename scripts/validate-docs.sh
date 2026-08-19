@@ -21,6 +21,90 @@ for file in Path(".").rglob("*.md"):
             raise SystemExit(1)
 PY
 
+echo "==> Validating Agent Skills"
+python - <<'PY'
+from pathlib import Path
+import re
+import sys
+
+try:
+    import yaml
+except ImportError:
+    print("PyYAML is required: python -m pip install pyyaml", file=sys.stderr)
+    raise SystemExit(1)
+
+skill_files = sorted(
+    [*Path(".agents/skills").glob("*/SKILL.md"), *Path(".claude/skills").glob("*/SKILL.md")]
+)
+if not skill_files:
+    print("No repository Agent Skills found", file=sys.stderr)
+    raise SystemExit(1)
+
+metadata = {}
+for file in skill_files:
+    text = file.read_text(encoding="utf-8")
+    match = re.match(r"\A---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
+    if not match:
+        print(f"Missing YAML frontmatter: {file}", file=sys.stderr)
+        raise SystemExit(1)
+    try:
+        frontmatter = yaml.safe_load(match.group(1))
+    except yaml.YAMLError as error:
+        print(f"Invalid Skill frontmatter in {file}: {error}", file=sys.stderr)
+        raise SystemExit(1)
+    if not isinstance(frontmatter, dict):
+        print(f"Skill frontmatter must be a mapping: {file}", file=sys.stderr)
+        raise SystemExit(1)
+
+    name = frontmatter.get("name")
+    description = frontmatter.get("description")
+    if not isinstance(name, str) or not re.fullmatch(r"[a-z0-9-]{1,64}", name):
+        print(f"Invalid Skill name in {file}: {name!r}", file=sys.stderr)
+        raise SystemExit(1)
+    if file.parent.name != name:
+        print(f"Skill folder must match name: {file} -> {name}", file=sys.stderr)
+        raise SystemExit(1)
+    if not isinstance(description, str) or not description.strip() or len(description) > 1024:
+        print(f"Invalid Skill description in {file}", file=sys.stderr)
+        raise SystemExit(1)
+    if re.search(r"\[TODO(?::|\])", text):
+        print(f"Unfinished Skill scaffold: {file}", file=sys.stderr)
+        raise SystemExit(1)
+    metadata[str(file)] = frontmatter
+
+canonical = Path(".agents/skills/netbird-network-operator/SKILL.md")
+claude_entry = Path(".claude/skills/netbird-network-operator/SKILL.md")
+if not canonical.exists() or not claude_entry.exists():
+    print("Missing NetBird canonical Skill or Claude compatibility entry", file=sys.stderr)
+    raise SystemExit(1)
+if metadata[str(canonical)]["name"] != metadata[str(claude_entry)]["name"]:
+    print("Canonical and Claude Skill names differ", file=sys.stderr)
+    raise SystemExit(1)
+if "../../../.agents/skills/netbird-network-operator/SKILL.md" not in claude_entry.read_text(encoding="utf-8"):
+    print("Claude entry must load the canonical NetBird Skill", file=sys.stderr)
+    raise SystemExit(1)
+
+openai_file = canonical.parent / "agents/openai.yaml"
+try:
+    openai = yaml.safe_load(openai_file.read_text(encoding="utf-8"))
+except (OSError, UnicodeError, yaml.YAMLError) as error:
+    print(f"Invalid OpenAI Skill metadata: {error}", file=sys.stderr)
+    raise SystemExit(1)
+interface = openai.get("interface", {}) if isinstance(openai, dict) else {}
+for key in ("display_name", "short_description", "default_prompt"):
+    if not isinstance(interface.get(key), str) or not interface[key].strip():
+        print(f"Missing interface.{key} in {openai_file}", file=sys.stderr)
+        raise SystemExit(1)
+if not 25 <= len(interface["short_description"]) <= 64:
+    print("OpenAI short_description must be 25-64 characters", file=sys.stderr)
+    raise SystemExit(1)
+if "$netbird-network-operator" not in interface["default_prompt"]:
+    print("OpenAI default_prompt must mention $netbird-network-operator", file=sys.stderr)
+    raise SystemExit(1)
+
+print(f"validated agent skills: {len(skill_files)}")
+PY
+
 echo "==> Checking Markdown code fences"
 python - <<'PY'
 from pathlib import Path
