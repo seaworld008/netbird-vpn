@@ -39,6 +39,8 @@
 - 以官方脚本和 Docker Compose 为自建主线，不维护魔改安装器。
 - 覆盖 OpenVPN 替代、白名单系统、K8S、多云、Exit Node、Reverse Proxy、IdP、MFA、Posture Checks、Setup Keys。
 - 每个核心场景都尽量包含验证、排障和回滚，避免“装完但不会用”。
+- 内置跨 Agent 的 `netbird-network-operator` Skill，可让 Codex、Claude Code 等工具盘点、设计并执行 NetBird 网络与访问策略。
+- 支持复用用户现有、已登录的 Chrome NetBird 控制台页面完成配置，并继续用客户端、路由节点和目标侧证据验收数据面。
 - 内置 `AGENTS.md`、路线图、ADR 和校验脚本，方便后续 AI agent 持续维护。
 
 ## 一、推荐阅读顺序
@@ -50,6 +52,14 @@
 - [官方部署说明（新手优先）](docs/selfhosted/quickstart-modern.md)
 - [NetBird 上游版本状态](docs/selfhosted/upstream-version-status.md)
 - [服务器端配置速查](docs/selfhosted/docker-compose-config-cheatsheet.md)
+
+### AI Agent 自动配置
+
+- [NetBird Network Operator Skill](.agents/skills/netbird-network-operator/SKILL.md)：从只读盘点、Groups / Policies、Networks / Resources、Routing Peers、Setup Keys 到验证和回滚的完整闭环。
+- Codex：从仓库根目录启动后，可直接使用 `$netbird-network-operator`，也可让 Codex 根据请求自动触发。
+- Claude Code：从仓库根目录启动后，可使用 `/netbird-network-operator`；`.claude/skills/` 入口会加载同一份权威技能。
+- 需要直接操作控制台时，可以明确说“使用我现有已登录的 Chrome NetBird 页面配置”；Agent 应复用该会话，不新开浏览器。
+- [Agent 自动配置安全模型](docs/decisions/ADR-005-agent-assisted-netbird-automation.md)：执行面、授权门、数据面证据和持续维护原则。
 
 ### 场景案例
 
@@ -87,6 +97,7 @@
 - [固定镜像版本与隔离 Routing Peer 决策](docs/decisions/ADR-002-pinned-images-and-routing-peer-isolation.md)
 - [Kubernetes Routing Peer 安全发布决策](docs/decisions/ADR-003-kubernetes-routing-peer-safety-model.md)
 - [定向公网出口隔离决策](docs/decisions/ADR-004-targeted-public-egress-routing-peer-isolation.md)
+- [Agent 自动配置安全模型](docs/decisions/ADR-005-agent-assisted-netbird-automation.md)
 - [AI Agent 维护说明](AGENTS.md)
 
 ## 二、快速开始
@@ -203,6 +214,16 @@ NetBird 主线部署里，最常用的对外端口如下：
 ├── CONTRIBUTING.md
 ├── SECURITY.md
 ├── AGENTS.md
+├── .agents/
+│   └── skills/
+│       └── netbird-network-operator/
+│           ├── SKILL.md
+│           ├── agents/openai.yaml
+│           └── references/
+├── .claude/
+│   └── skills/
+│       └── netbird-network-operator/
+│           └── SKILL.md
 ├── scripts/
 │   └── validate-docs.sh
 └── docs/
@@ -240,7 +261,8 @@ NetBird 主线部署里，最常用的对外端口如下：
     │   ├── ADR-001-documentation-operating-model.md
     │   ├── ADR-002-pinned-images-and-routing-peer-isolation.md
     │   ├── ADR-003-kubernetes-routing-peer-safety-model.md
-    │   └── ADR-004-targeted-public-egress-routing-peer-isolation.md
+    │   ├── ADR-004-targeted-public-egress-routing-peer-isolation.md
+    │   └── ADR-005-agent-assisted-netbird-automation.md
     └── templates/
         └── case-template.md
 ```
@@ -256,6 +278,9 @@ NetBird 主线部署里，最常用的对外端口如下：
 - 访问控制文档：https://docs.netbird.io/manage/access-control/manage-network-access
 - 设备姿态检查：https://docs.netbird.io/manage/access-control/posture-checks
 - Setup Keys：https://docs.netbird.io/manage/peers/register-machines-using-setup-keys
+- Public API 与 Service Users：https://docs.netbird.io/manage/public-api
+- 自托管自动初始化：https://docs.netbird.io/selfhosted/automated-setup
+- 官方 Ansible 配置：https://docs.netbird.io/selfhosted/iac/ansible
 - Kubernetes Operator：https://docs.netbird.io/manage/integrations/kubernetes
 - 路由网络访问限制：https://docs.netbird.io/manage/networks/accessing-restricted-domain-resources
 
@@ -264,5 +289,6 @@ NetBird 主线部署里，最常用的对外端口如下：
 - [文档目录索引](docs/README.md)
 - [开源协作说明](CONTRIBUTING.md)
 - [安全响应流程](SECURITY.md)
+- [NetBird Network Operator Skill](.agents/skills/netbird-network-operator/SKILL.md)
 - [AI Agent 维护说明](AGENTS.md)
 - [版本变更记录](CHANGELOG.md)

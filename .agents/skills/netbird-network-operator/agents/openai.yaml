@@ -1,0 +1,4 @@
+interface:
+  display_name: "NetBird 网络自动化"
+  short_description: "自动设计、配置、验证和回滚 NetBird 网络与访问策略"
+  default_prompt: "Use $netbird-network-operator to inventory this NetBird environment and safely implement the requested access path."

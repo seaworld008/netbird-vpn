@@ -36,6 +36,13 @@
 ├── CHANGELOG.md
 ├── CONTRIBUTING.md
 ├── SECURITY.md
+├── .agents/
+│   └── skills/netbird-network-operator/
+│       ├── SKILL.md
+│       ├── agents/openai.yaml
+│       └── references/
+├── .claude/
+│   └── skills/netbird-network-operator/SKILL.md
 ├── scripts/
 │   └── validate-docs.sh
 └── docs/
@@ -73,7 +80,8 @@
     │   ├── ADR-001-documentation-operating-model.md
     │   ├── ADR-002-pinned-images-and-routing-peer-isolation.md
     │   ├── ADR-003-kubernetes-routing-peer-safety-model.md
-    │   └── ADR-004-targeted-public-egress-routing-peer-isolation.md
+    │   ├── ADR-004-targeted-public-egress-routing-peer-isolation.md
+    │   └── ADR-005-agent-assisted-netbird-automation.md
     └── templates/
         └── case-template.md
 ```
@@ -93,6 +101,12 @@ rg --files
 - 不要回滚。
 - 先读 `git diff --stat` 和相关文件。
 - 在已有改动基础上继续。
+
+如果任务是让 AI Agent 实际配置、审计、排障或回滚 NetBird：
+
+- 必须读 `.agents/skills/netbird-network-operator/SKILL.md`。
+- Codex 从 `.agents/skills/` 自动发现；Claude Code 通过 `.claude/skills/` 入口加载同一权威技能。
+- 用户指定现有已登录 Chrome 控制台时，继续读技能中的 `references/dashboard-chrome-operations.md`，复用该会话，不新开其他浏览器替代。
 
 ## 5. 更新 NetBird 上游版本的方法
 
@@ -319,3 +333,22 @@ grafana.proxy.example.com
 
 新增时遵循 `docs/templates/case-template.md`。
 路线图见 `docs/maintenance/roadmap.md`；重大组织方式变化先写 `docs/decisions/ADR-XXX-*.md`。
+
+## 15. NetBird 自动配置 Skill 维护
+
+权威入口：
+
+- `.agents/skills/netbird-network-operator/SKILL.md`
+
+兼容入口：
+
+- `.claude/skills/netbird-network-operator/SKILL.md`
+
+维护规则：
+
+- 通用操作边界、对象设计、验证和回滚更新到 Skill；具体场景步骤继续放在 `docs/cases/` 或 `docs/operations/`，不要整篇复制进 Skill。
+- Chrome 控制台实战更新到 `references/dashboard-chrome-operations.md`；API / Ansible / 主机执行边界更新到 `references/execution-workflow.md`。
+- 新实战经验必须先脱敏，只保留能改变后续 Agent 决策的规律，不固化某个客户的名称、地址和一次性现场值。
+- `.claude/skills/` 只保留加载权威 Skill 的兼容入口，不维护第二套完整规则。
+- 修改 Skill 后同时运行 `skill-creator` 的 `quick_validate.py` 和 `./scripts/validate-docs.sh`。
+- 自动配置安全模型见 `docs/decisions/ADR-005-agent-assisted-netbird-automation.md`。

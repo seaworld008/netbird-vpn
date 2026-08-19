@@ -11,6 +11,8 @@
 | `docs/operations/` | 运维、排障、安全组、备份、升级、回滚 |
 | `docs/maintenance/` | 文档自身的升级、治理、校验、贡献流程 |
 | `docs/templates/` | 新增场景或变更时复用的模板 |
+| `.agents/skills/` | 跨 Agent 的权威操作 Skill、按需参考和 UI 元数据 |
+| `.claude/skills/` | Claude Code 发现入口，不复制权威规则 |
 
 ## 2. 场景文档必须包含
 
@@ -119,7 +121,20 @@ metadata:
 - 是否把 Netstack 当成所有 Linux 的默认，而没有说明兼容场景和性能取舍。
 - Setup Key 是否写进 YAML，或长期使用无限次 Reusable Key。
 
-## 9. 推荐迭代方向
+## 9. Agent Skill 质量标准
+
+`netbird-network-operator` 的改动必须满足：
+
+- `description` 同时写清能力、触发场景和排除边界，名称与目录符合 Agent Skills 规范。
+- `SKILL.md` 只保留所有任务共用的流程和不变量；执行面、网络设计、场景、验证、Chrome 控制台和实战经验按需放在 `references/`。
+- Codex / 通用 Agent 使用 `.agents/skills/` 权威内容；Claude Code 兼容入口只负责加载该内容。
+- 用户指定现有已登录 Chrome 时，把浏览器选择当成硬约束，不切换会话、不读取 Cookie / Local Storage，不用控制面在线状态代替数据面验证。
+- 自动化不扩大用户授权。删除、凭据、默认路由、生产网络持久化和服务重启必须有精确影响、验证、回滚及对应授权。
+- 不维护自定义 NetBird API 客户端；优先当前官方 Public API、官方 Ansible 集合、Dashboard 和原生命令。
+- 新实战规则必须脱敏，并能解释它改变了 Agent 的哪个决策；偶然错误和现场值不升级为普遍要求。
+- 执行技能专项校验和 `./scripts/validate-docs.sh`；没有真实环境测试时明确写“技能结构与文档级校验”。
+
+## 10. 推荐迭代方向
 
 后续可以逐步补齐：
 
