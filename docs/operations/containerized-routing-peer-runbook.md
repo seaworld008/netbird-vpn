@@ -59,7 +59,7 @@ nftables / iptables。
 | 部署目录 | `/data/netbird-client` |
 | Compose 服务名 | `routing-peer` |
 | 容器名 | `netbird-routing-peer` |
-| 镜像 | `netbirdio/netbird:0.77.0` |
+| 镜像 | `netbirdio/netbird:0.77.1` |
 | Management URL | `https://netbird.example.com` |
 | Routing Peer Group | `cloud-a-routing-peers` |
 | 用户设备访问组 | `cloud-a-access` |
@@ -72,7 +72,7 @@ nftables / iptables。
 生产环境可以把同一版本镜像同步到内网仓库，例如：
 
 ```text
-registry.example.com/netbird/netbird:0.77.0
+registry.example.com/netbird/netbird:0.77.1
 ```
 
 无论使用公共仓库还是内网仓库，都要保留明确版本标签，并在变更记录中保存镜像 digest。
@@ -154,7 +154,7 @@ version: "2.4"
 
 services:
   routing-peer:
-    image: netbirdio/netbird:0.77.0
+    image: netbirdio/netbird:0.77.1
     container_name: netbird-routing-peer
     hostname: netbird-routing-peer
     restart: unless-stopped
@@ -224,7 +224,7 @@ networks:
 cd /data/netbird-client
 docker compose config
 docker compose pull
-docker image inspect netbirdio/netbird:0.77.0 \
+docker image inspect netbirdio/netbird:0.77.1 \
   --format 'id={{.Id}} digests={{json .RepoDigests}}'
 ```
 
@@ -562,7 +562,7 @@ docker compose up -d routing-peer
 ## 14. 官方参考
 
 - Setup Keys：https://docs.netbird.io/manage/peers/register-machines-using-setup-keys
-- Setup Key 注册服务器：https://docs.netbird.io/manage/peers/access-infrastructure/setup-keys-add-servers-to-network
+- Setup Key 注册服务器：https://docs.netbird.io/manage/peers/register-machines-using-setup-keys
 - Docker 客户端：https://docs.netbird.io/get-started/install/docker
 - Routing Peer 原理：https://docs.netbird.io/manage/networks/how-routing-peers-work
 - Networks：https://docs.netbird.io/manage/networks

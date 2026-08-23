@@ -32,25 +32,33 @@ flowchart LR
 
 不要全环境共用一个 key。
 
-| Key 名称 | 用途 | Auto-assigned groups | 建议 |
-| --- | --- | --- | --- |
-| `nb-dev-servers` | 开发服务器 | `dev-servers` | 限制使用次数 |
-| `nb-prod-routing-peers` | 生产路由节点 | `prod-routing-peers` | 严格限制次数 |
-| `nb-ci-runners` | CI Runner | `ci-runners` | 开启 ephemeral peers |
-| `nb-k8s-routing-peers` | K8S 路由 Pod | `k8s-routing-peers` | 开启 ephemeral peers |
+| Key 名称 | 用途 | 类型 | Usage limit | Auto-assigned groups | 建议 |
+| --- | --- | --- | --- | --- | --- |
+| `nb-dev-server-01` | 单台开发服务器 | One-off | `1` | `dev-servers` | 每台单独创建 |
+| `nb-prod-routing-peers` | 两台生产路由节点 | Reusable | `2` | `prod-routing-peers` | 注册完成立即撤销 |
+| `nb-ci-runners` | 一批 CI Runner | Reusable | 计划实例数 | `ci-runners` | 开启 ephemeral peers |
+| `nb-k8s-routing-peers` | 一批 K8S 路由 Pod | Reusable | 计划实例数 | `k8s-routing-peers` | 开启 ephemeral peers |
 
 Dashboard：
 
 1. 进入 `Settings > Setup Keys`。
 2. 创建 key。
 3. 设置过期时间。
-4. 设置 usage limit。
-5. 选择 auto-assigned groups。
-6. 短生命周期 workload 开启 ephemeral peers。
+4. 单台设备选择 One-off；批量自动化选择 Reusable。
+5. One-off 的 usage limit 保持为 `1`；Reusable 才设置计划使用次数。
+6. 选择 auto-assigned groups。
+7. 短生命周期 workload 开启 ephemeral peers。
+
+One-off 就是单次使用类型，不是“可重复若干次的一次性 Key”。NetBird v0.77.1
+起，Public API 对 One-off 的 `usage_limit > 1` 返回 HTTP `422`，不会再静默改成
+`1`。Terraform、Ansible 或自写 API 客户端需要注册多台设备时，必须显式选择
+Reusable，并把 usage limit 限制为计划设备数。
 
 ### 3.1 长期节点不要追求“永不过期 Key”
 
-生产 Routing Peer、数据库跳板机等长期节点仍建议使用短期、低 usage limit 的 Key。正确做法是：
+生产 Routing Peer、数据库跳板机等长期节点仍建议使用短过期 Key。单台节点使用
+One-off、usage limit=`1`；同一批受控节点使用 Reusable，并把 usage limit 设为
+准确的计划节点数。正确做法是：
 
 1. 首次注册时临时注入 Key。
 2. 持久化客户端身份目录。
@@ -58,6 +66,53 @@ Dashboard：
 4. 不带 Key 重启或重建一次，确认身份和 NetBird IP 保持不变。
 
 Docker 客户端默认身份目录是 `/var/lib/netbird`。完整容器操作见 [云 VPC 容器化 Routing Peer 运维手册](../operations/containerized-routing-peer-runbook.md)。
+
+### 3.2 Public API 自动化契约
+
+下面三个 JSON 仅展示本次版本需要特别约束的字段片段，**不是可以直接提交的完整
+请求体**。创建 Setup Key 时还要按当前 OpenAPI 补齐 `expires_in`、
+`auto_groups` 等必填字段；自动化应从实例 OpenAPI 生成或校验完整请求，不能把
+片段直接发送到生产 API。
+
+创建单台设备的 One-off Key 时，类型和使用次数必须一致：
+
+```json
+{
+  "name": "nb-dev-server-01",
+  "type": "one-off",
+  "usage_limit": 1
+}
+```
+
+批量注册使用 Reusable：
+
+```json
+{
+  "name": "nb-ci-runners",
+  "type": "reusable",
+  "usage_limit": 20
+}
+```
+
+如果自动化同时维护 Policy，还要遵守 v0.77.1 明确的端口字段契约：同一规则的
+`ports` 与 `port_ranges` 互斥，创建和更新时混用会返回 HTTP `422`。需要同时
+表达单端口和区间时，只提交 `port_ranges`，单端口写成起止相同的范围：
+
+```json
+{
+  "protocol": "tcp",
+  "port_ranges": [
+    {
+      "start": 22,
+      "end": 22
+    },
+    {
+      "start": 8000,
+      "end": 8100
+    }
+  ]
+}
+```
 
 ## 4. 通用安装脚本
 
@@ -118,7 +173,7 @@ runcmd:
 注意：
 
 - Cloud-init 里明文写 Setup Key 有泄露风险，生产环境优先用云厂商 Secret Manager 或临时 user-data。
-- key 应设置短过期和 usage limit。
+- 单台实例使用短过期 One-off、usage limit=`1`；同一 user-data 用于一批实例时改用短期 Reusable，并限制为计划实例数。
 
 ## 6. Ansible 示例
 
@@ -215,8 +270,9 @@ terraform apply -var 'netbird_setup_key=NBSETUP-TERRAFORM-REPLACE-ME'
 
 CI Runner、临时容器、短生命周期任务建议：
 
-- 使用专用 Setup Key。
+- 使用专用、短期 Reusable Setup Key，不把 One-off 配成大于 `1` 的 usage limit。
 - 开启 ephemeral peers。
+- usage limit 设为本批计划 Runner 数，批次结束后撤销。
 - 限制 key 的权限组，例如只加入 `ci-runners`。
 - 策略只允许访问必要资源。
 
@@ -264,6 +320,7 @@ curl -k -I https://10.20.10.20
 
 检查：
 
+- One-off 的 usage limit 是否误配成大于 `1`；v0.77.1 起这会在创建阶段返回 HTTP `422`。
 - key 是否过期。
 - key 使用次数是否耗尽。
 - key 是否被 revoke。
@@ -362,7 +419,7 @@ CI Runner：
 
 - Setup Key 当作密钥处理。
 - 每个用途一个 key。
-- 生产路由节点 key 严格限制次数。
+- 单台设备使用 One-off、usage limit=`1`；批量注册使用 Reusable，并严格限制为计划次数。
 - 不把 key 提交到 Git。
 - 不把 key 打印到 CI 日志。
 
@@ -372,3 +429,5 @@ CI Runner：
 - Linux 安装：https://docs.netbird.io/get-started/install/linux
 - Docker 安装：https://docs.netbird.io/get-started/install/docker
 - Public API Tokens：https://docs.netbird.io/manage/public-api
+- One-off usage limit 校验：https://github.com/netbirdio/netbird/pull/7220
+- Policy 端口字段契约：https://github.com/netbirdio/netbird/pull/7158

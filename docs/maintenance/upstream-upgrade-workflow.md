@@ -17,16 +17,25 @@
 在仓库根目录执行：
 
 ```bash
+set -euo pipefail
+
 git pull --ff-only origin main
-curl -s https://api.github.com/repos/netbirdio/netbird/releases/latest | jq -r '.tag_name, .published_at, .html_url, .prerelease'
+curl -fsSL https://api.github.com/repos/netbirdio/netbird/releases/latest \
+  | jq -r '.tag_name, .published_at, .html_url, .prerelease'
+curl -fsSL https://api.github.com/repos/netbirdio/dashboard/releases/latest \
+  | jq -r '.tag_name, .published_at, .html_url, .prerelease'
 git ls-remote --tags --sort='v:refname' https://github.com/netbirdio/netbird.git | tail -30
 git ls-remote https://github.com/netbirdio/netbird.git HEAD refs/heads/main
 ```
 
 判断规则：
 
-- `releases/latest` 且 `prerelease=false` 才能写成当前稳定版本。
+- NetBird 和 Dashboard 是两个独立发布流；两边都必须以各自仓库的
+  `releases/latest` 且 `prerelease=false` 为稳定版本依据。
 - `vX.Y.Z-rc.*` 只能写成预发布观察项，不能写成本仓库默认部署目标。
+- Management、Signal、Relay 来自 NetBird 主仓库并共享 NetBird 版本。启用了
+  Reverse Proxy 时，还要把 Management 侧容器与 `reverse-proxy` 纳入同一次
+  兼容性检查和升级，不要只升级其中一个。
 - 官方脚本安装入口继续使用 `releases/latest/download/getting-started.sh`，不要在文档里硬编码旧脚本下载地址。
 
 ## 3. 必须同步更新的文件
@@ -49,16 +58,17 @@ git ls-remote https://github.com/netbirdio/netbird.git HEAD refs/heads/main
 优先核对这些页面：
 
 - Self-hosted Quickstart：https://docs.netbird.io/selfhosted/selfhosted-quickstart
-- Configuration Files：https://docs.netbird.io/selfhosted/configuration-files
+- Configuration Files：https://docs.netbird.io/selfhosted/maintenance/configuration-files
+- Self-hosted Upgrade：https://docs.netbird.io/selfhosted/maintenance/upgrade
 - Routing Peers：https://docs.netbird.io/manage/networks/how-routing-peers-work
 - Networks：https://docs.netbird.io/manage/networks
 - Network Routes：https://docs.netbird.io/manage/network-routes
-- Exit Nodes：https://docs.netbird.io/manage/network-routes/use-cases/exit-nodes
+- Exit Nodes：https://docs.netbird.io/use-cases/remote-access/exit-nodes
 - Access Control：https://docs.netbird.io/manage/access-control/manage-network-access
 - Setup Keys：https://docs.netbird.io/manage/peers/register-machines-using-setup-keys
 - Reverse Proxy：https://docs.netbird.io/manage/reverse-proxy
 - Kubernetes Routing Peers：https://docs.netbird.io/use-cases/kubernetes/routing-peers-and-kubernetes
-- Kubernetes Operator：https://docs.netbird.io/manage/integrations/kubernetes
+- Kubernetes：https://docs.netbird.io/use-cases/kubernetes
 
 ## 5. 兼容性判断口径
 
@@ -89,13 +99,75 @@ git ls-remote https://github.com/netbirdio/netbird.git HEAD refs/heads/main
 | Kubernetes | Deployment YAML、Operator CRD、镜像版本、探针命令 |
 | Legacy external IdP | 官方迁移工具是否支持当前拓扑、账号映射、数据库备份与恢复 |
 
-生产 Compose 还必须核对：
+### 6.1 先确认目标镜像真实存在
+
+把两个 release API 返回的稳定标签填入变量。NetBird 容器标签通常不带前导
+`v`，Dashboard 标签保留 release 中的完整值：
 
 ```bash
-docker compose config --images
+set -euo pipefail
+
+NETBIRD_RELEASE="vX.Y.Z"
+DASHBOARD_RELEASE="vX.Y.Z"
+test "$NETBIRD_RELEASE" != "vX.Y.Z"
+test "$DASHBOARD_RELEASE" != "vX.Y.Z"
+NETBIRD_IMAGE_TAG="${NETBIRD_RELEASE#v}"
+TARGET_PLATFORM="${TARGET_PLATFORM:-linux/amd64}"
+
+for image in \
+  "netbirdio/netbird-server:${NETBIRD_IMAGE_TAG}" \
+  "netbirdio/reverse-proxy:${NETBIRD_IMAGE_TAG}" \
+  "netbirdio/dashboard:${DASHBOARD_RELEASE}"; do
+  echo "checking ${image}"
+  docker manifest inspect "${image}" |
+    jq -e --arg platform "$TARGET_PLATFORM" '
+      any(.manifests[]?;
+        (.platform.os + "/" + .platform.architecture
+          + (if .platform.variant then "/" + .platform.variant else "" end))
+        == $platform)
+    ' >/dev/null
+done
 ```
 
-所有运行镜像都应使用明确标签。首次安装脚本使用 `releases/latest` 不影响这一要求。
+如果使用 legacy 多容器架构，还要对同一 `NETBIRD_IMAGE_TAG` 下的
+`netbirdio/management`、`netbirdio/signal` 和 `netbirdio/relay` 执行相同检查。
+某个 manifest 不存在、没有目标主机架构，或 release notes 要求中间版本时，
+停止修改生产 Compose；不能用 `latest` 绕过失败。
+目标主机不是 `linux/amd64` 时先把 `TARGET_PLATFORM` 改成实际平台，例如
+`linux/arm64`。上述检查要求安装 `jq`，任一下载、解析或平台断言失败都会终止。
+
+### 6.2 固定生产目标并检查同步关系
+
+变更前后分别保存渲染后的镜像清单：
+
+```bash
+set -euo pipefail
+
+mkdir -p backup/upgrade-image-inventory
+docker compose config --images \
+  | sort -u \
+  | tee backup/upgrade-image-inventory/images.before.txt
+test -s backup/upgrade-image-inventory/images.before.txt
+
+# 修改 docker-compose.yml 中的明确标签后再次执行
+docker compose config --images \
+  | sort -u \
+  | tee backup/upgrade-image-inventory/images.target.txt
+test -s backup/upgrade-image-inventory/images.target.txt
+```
+
+检查目标清单：
+
+- Combined 架构的 `netbird-server` 使用本次确认的 NetBird 固定标签。
+- 启用 Reverse Proxy 时，`reverse-proxy` 使用与 Management 侧相同的 NetBird
+  固定标签，并与 Management 一起升级、验证和回滚。
+- Legacy 架构的 Management、Signal、Relay 使用同一个 NetBird 固定标签。
+- Dashboard 使用其独立 `releases/latest` 对应的固定标签。
+- 清单中没有 `latest`、`main` 或省略标签的镜像。
+
+首次安装脚本使用 `releases/latest` 只表示“下载当前稳定版生成器”，不等于允许
+生产 Compose 长期跟随浮动镜像。镜像 manifest 通过也只证明目标可拉取，不代表
+真实部署已经完成兼容验证。
 
 ## 7. 文档更新后的本地校验
 
@@ -134,7 +206,9 @@ bash scripts/validate-docs.sh
 ## Validation
 
 - `./scripts/validate-docs.sh`
-- 官方 latest：`<version>`，`prerelease=false`
+- NetBird latest：`<version>`，`prerelease=false`
+- Dashboard latest：`<version>`，`prerelease=false`
+- 目标镜像 manifest 与 Management / Proxy 同步关系：
 - 如有实际部署测试，写明环境和结果
 ```
 
@@ -142,6 +216,8 @@ bash scripts/validate-docs.sh
 
 - 不要因为看到 RC 标签就把仓库默认版本改成 RC。
 - 不要把未验证的 Dashboard 新功能写成生产主线。
+- 不要只升级 Management 或 Proxy 后就宣称 Reverse Proxy 链路兼容。
+- 不要在生产 Compose 中使用 `latest`、`main` 或省略标签的镜像。
 - 不要恢复 legacy 配置模板作为默认路径。
 - 不要把真实密钥、真实内网拓扑、真实公网 IP 写进文档。
 - 不要删除已有案例的“验证、排障、回滚”章节。

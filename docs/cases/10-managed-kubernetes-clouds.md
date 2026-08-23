@@ -85,8 +85,11 @@ curl -k https://10.60.0.5:6443/version
 路由节点验证：
 
 ```bash
-nc -vz <ack-private-apiserver-ip> 6443
-curl -k https://<ack-private-apiserver-ip>:6443/version
+: "${ACK_API_IP:?set the ACK private API server IP}"
+: "${ACK_API_URL:?set the ACK API URL from kubeconfig, including scheme}"
+
+nc -vz "$ACK_API_IP" 6443
+curl --fail --show-error "${ACK_API_URL%/}/version"
 ```
 
 ## 5. EKS 检查点
@@ -109,8 +112,16 @@ AWS EKS 常见关注点：
 验证：
 
 ```bash
-aws eks describe-cluster --name prod-k8s --query 'cluster.resourcesVpcConfig'
-nc -vz <eks-private-endpoint-host-or-ip> 443
+EKS_ENDPOINT="$(
+  aws eks describe-cluster --name prod-k8s \
+    --query 'cluster.endpoint' --output text
+)"
+EKS_HOST="${EKS_ENDPOINT#https://}"
+test -n "$EKS_HOST"
+
+aws eks describe-cluster --name prod-k8s \
+  --query 'cluster.resourcesVpcConfig'
+nc -vz "$EKS_HOST" 443
 ```
 
 如果 API Server endpoint 是域名，优先用 kubeconfig 中的域名，并在 NetBird 添加 Domain Resource。
@@ -135,8 +146,14 @@ GKE 常见关注点：
 验证：
 
 ```bash
-gcloud container clusters describe prod-k8s --region <region> --format='value(privateClusterConfig.privateEndpoint)'
-nc -vz <gke-private-endpoint> 443
+: "${GKE_REGION:?set the GKE region}"
+GKE_PRIVATE_ENDPOINT="$(
+  gcloud container clusters describe prod-k8s \
+    --region "$GKE_REGION" \
+    --format='value(privateClusterConfig.privateEndpoint)'
+)"
+test -n "$GKE_PRIVATE_ENDPOINT"
+nc -vz "$GKE_PRIVATE_ENDPOINT" 443
 ```
 
 如果使用 Master authorized networks，确认路由节点出口 IP 在授权范围内。
@@ -161,8 +178,12 @@ AKS 常见关注点：
 验证：
 
 ```bash
-az aks show --resource-group rg-prod --name prod-k8s --query privateFqdn -o tsv
-nc -vz <aks-private-fqdn> 443
+AKS_PRIVATE_FQDN="$(
+  az aks show --resource-group rg-prod --name prod-k8s \
+    --query privateFqdn -o tsv
+)"
+test -n "$AKS_PRIVATE_FQDN"
+nc -vz "$AKS_PRIVATE_FQDN" 443
 ```
 
 如果 private FQDN 解析失败，需要让路由节点使用能解析该私有域名的 DNS。
@@ -197,9 +218,12 @@ nc -vz <aks-private-fqdn> 443
 命令：
 
 ```bash
+: "${POD_IP:?set the demo Pod IP}"
+: "${SERVICE_IP:?set the demo Service IP}"
+
 kubectl --kubeconfig ./prod-k8s-netbird.kubeconfig get ns
-curl -I http://<pod-ip>
-curl -I http://<service-ip>
+curl --fail --show-error --head "http://${POD_IP}"
+curl --fail --show-error --head "http://${SERVICE_IP}"
 ```
 
 ## 10. 排障
@@ -264,8 +288,11 @@ helm list -n netbird
 删除测试 Routing Peer CR：
 
 ```bash
+: "${ROUTING_PEER_NAME:?set the test RoutingPeer name}"
+: "${ROUTING_PEER_NAMESPACE:?set the test RoutingPeer namespace}"
+
 kubectl get routingpeers -A
-kubectl delete routingpeer <name> -n <namespace>
+kubectl delete routingpeer "$ROUTING_PEER_NAME" -n "$ROUTING_PEER_NAMESPACE"
 ```
 
 如果整个 Operator 只是为本次测试安装，可以卸载：
@@ -282,9 +309,11 @@ kubectl delete namespace netbird
 在本地开发机执行：
 
 ```bash
+: "${POD_IP:?set the demo Pod IP}"
+
 netbird networks ls
 kubectl --kubeconfig ./prod-k8s-netbird.kubeconfig get ns
-curl -I http://<pod-ip>
+curl --fail --show-error --head "http://${POD_IP}"
 ```
 
 预期：
@@ -296,6 +325,6 @@ curl -I http://<pod-ip>
 ## 12. 官方参考
 
 - K8S Routing Peers：https://docs.netbird.io/use-cases/kubernetes/routing-peers-and-kubernetes
-- Kubernetes Operator：https://docs.netbird.io/manage/integrations/kubernetes
-- Routing Peer CRD：https://docs.netbird.io/manage/integrations/kubernetes/routing-peer
+- Kubernetes Operator：https://docs.netbird.io/use-cases/kubernetes
+- Routing Peer CRD：https://docs.netbird.io/use-cases/kubernetes/routing-peer
 - Routing Peers 原理：https://docs.netbird.io/manage/networks/how-routing-peers-work

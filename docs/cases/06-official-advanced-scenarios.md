@@ -425,9 +425,13 @@ netbird status
 ## 验证命令
 
 ```bash
+: "${TARGET_IP:?set the target resource IP}"
+: "${TARGET_PORT:?set the target resource TCP port}"
+: "${TARGET_URL:?set the full target URL, including scheme}"
+
 netbird status
-nc -vz <target-ip> <port>
-curl -k -I https://<target>
+nc -vz "$TARGET_IP" "$TARGET_PORT"
+curl --fail --show-error --head "$TARGET_URL"
 ```
 
 ## 回滚步骤
@@ -448,16 +452,24 @@ sudo systemctl stop netbird
 授权设备：
 
 ```bash
+: "${TARGET_IP:?set the target resource IP}"
+: "${TARGET_PORT:?set the target resource TCP port}"
+: "${TARGET_URL:?set the full target URL, including scheme}"
+
 netbird status
-nc -vz <target-ip> <port>
-curl -k -I https://<target>
+nc -vz "$TARGET_IP" "$TARGET_PORT"
+curl --fail --show-error --head "$TARGET_URL"
 ```
 
 非授权设备：
 
 ```bash
-nc -vz -w 5 <target-ip> <port>
-curl -k -I --connect-timeout 5 https://<target>
+: "${TARGET_IP:?set the target resource IP}"
+: "${TARGET_PORT:?set the target resource TCP port}"
+: "${TARGET_URL:?set the full target URL, including scheme}"
+
+nc -vz -w 5 "$TARGET_IP" "$TARGET_PORT"
+curl --fail --show-error --head --connect-timeout 5 "$TARGET_URL"
 ```
 
 日志留存：
@@ -486,5 +498,5 @@ curl -k -I --connect-timeout 5 https://<target>
 - Setup Keys：https://docs.netbird.io/manage/peers/register-machines-using-setup-keys
 - Routing Peers 原理：https://docs.netbird.io/manage/networks/how-routing-peers-work
 - Networks：https://docs.netbird.io/manage/networks
-- Resolve Overlapping Routes：https://docs.netbird.io/how-to/resolve-overlapping-routes
+- Resolve Overlapping Routes：https://docs.netbird.io/manage/network-routes/overlapping-routes
 - IPv6 Overlay Addressing：https://docs.netbird.io/manage/settings/ipv6

@@ -212,24 +212,26 @@ netbird status
 如果失败，先不要继续改新配置。直接对照备份回滚：
 
 ```bash
-cp backup/<backup-dir>/docker-compose.yml .
-cp backup/<backup-dir>/config.yaml .
-cp backup/<backup-dir>/dashboard.env .
+: "${BACKUP_DIR:?set the verified backup directory}"
+cp "$BACKUP_DIR/docker-compose.yml" .
+cp "$BACKUP_DIR/config.yaml" .
+cp "$BACKUP_DIR/dashboard.env" .
 docker compose up -d
 ```
 
 ## 8. 生产镜像标签清单
 
-本次核对的稳定基线是 NetBird `0.77.0`、Dashboard `v2.91.1`。新安装使用
+本次核对的稳定基线是 NetBird `0.77.1`、Dashboard `v2.91.1`。新安装使用
 combined `netbird-server`；下面只展示标签写法，不是可直接覆盖现有拓扑的完整
-Compose：
+Compose。本仓库已确认这些标签存在，但没有用 `v0.77.1` 执行真实生产升级；
+生产使用前仍要在自己的测试环境完成备份、升级和回归：
 
 ```yaml
 services:
   dashboard:
     image: netbirdio/dashboard:v2.91.1
   netbird-server:
-    image: netbirdio/netbird-server:0.77.0
+    image: netbirdio/netbird-server:0.77.1
 ```
 
 升级前后都保存镜像清单：
@@ -252,7 +254,7 @@ version: "2.4"
 
 services:
   routing-peer:
-    image: netbirdio/netbird:0.77.0
+    image: netbirdio/netbird:0.77.1
     container_name: netbird-routing-peer
     restart: unless-stopped
     networks:

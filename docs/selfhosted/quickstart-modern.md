@@ -1,6 +1,6 @@
 # 自建部署：官方推荐路径（getting-started.sh）
 
-> 适用版本：NetBird 官方脚本当前最新版。最近核对时间为 2026-08-17，官方最新稳定版为 NetBird `v0.77.0`、Dashboard `v2.91.1`。
+> 适用版本：NetBird 官方脚本当前最新版。最近核对时间为 2026-08-23，官方最新稳定版为 NetBird `v0.77.1`、Dashboard `v2.91.1`。
 
 ## 0. 核心约束（先确认）
 
@@ -29,12 +29,67 @@
 
 ## 3. 部署入口（官方唯一入口）
 
+交互式首次安装：
+
+`netbird.example.com` 是文档占位符，`v0.77.1` 脚本会拒绝原样值。执行前必须
+替换为已解析到服务器的真实 FQDN。
+
 ```bash
 export NETBIRD_DOMAIN=netbird.example.com
 curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting-started.sh | bash
 ```
 
 > 我们的策略：本地不维护自定义部署脚本。官方脚本负责“创建/更新模板”，我们只维护“配置文件可读性和配置一致性”。
+
+脚本会要求选择反向代理。当前官方选项为内置 Traefik、现有 Traefik、Nginx、
+Nginx Proxy Manager、外部 Caddy 和其他手工代理；内置 Traefik 是默认项。随后
+还可能询问是否启用 NetBird Proxy 与 CrowdSec。不要在不了解公网暴露范围时直接
+启用可选代理服务。
+
+### 3.1 `v0.77.1` 无交互新装
+
+`v0.77.1` 起，官方脚本可以从环境变量读取所有提示项，适合 cloud-init、CI 或
+Terraform `remote-exec`。这是“全新安装或重新生成配置”的入口，不是现有生产
+环境的升级命令。运行前必须把示例域名和邮箱换成自己的值：
+
+```bash
+set -euo pipefail
+
+INSTALLER="$(mktemp)"
+cleanup_installer() {
+  rm -f "$INSTALLER"
+}
+trap cleanup_installer EXIT HUP INT TERM
+
+curl -fsSL \
+  https://github.com/netbirdio/netbird/releases/latest/download/getting-started.sh \
+  --output "$INSTALLER"
+chmod 700 "$INSTALLER"
+
+NETBIRD_DOMAIN=vpn.example.com \
+NETBIRD_LETSENCRYPT_EMAIL=ops@example.com \
+NETBIRD_REVERSE_PROXY_TYPE=0 \
+NETBIRD_ENABLE_PROXY=false \
+NETBIRD_ENABLE_CROWDSEC=false \
+NETBIRD_NON_INTERACTIVE=true \
+  bash "$INSTALLER"
+```
+
+关键变量：
+
+| 变量 | 无交互要求或默认值 |
+| --- | --- |
+| `NETBIRD_DOMAIN` | 必填，必须是已解析到服务器的真实 FQDN |
+| `NETBIRD_LETSENCRYPT_EMAIL` | 使用内置 Traefik 时必填 |
+| `NETBIRD_REVERSE_PROXY_TYPE` | 默认 `0`，即内置 Traefik |
+| `NETBIRD_ENABLE_PROXY` | 默认 `false` |
+| `NETBIRD_ENABLE_CROWDSEC` | 默认 `false` |
+| `NETBIRD_BIND_LOCALHOST_ONLY` | 外部代理类型默认 `true` |
+| `NETBIRD_NON_INTERACTIVE` | 设为 `true` 后即使存在 TTY 也不提示 |
+
+布尔变量必须写成字面量 `true` 或 `false`。必填变量缺失时脚本应明确退出，不应
+通过补空值继续。自动化系统仍要保存脚本来源、生成文件差异和镜像清单，不要把
+“无交互”误解为“无需审查”。
 
 脚本执行后请按 [docker-compose-config-cheatsheet](./docker-compose-config-cheatsheet.md) 做二次配置。
 
@@ -76,17 +131,20 @@ docker compose up -d
 - 新建环境完全以官方脚本生成结果为准
 - 本仓库只负责解释这些配置文件如何修改和如何用于实际场景
 
-## 7. 升级到 v0.73 系列后的注意点
+## 7. 当前主线与升级注意点
 
 - `v0.71` 开始支持 IPv6 overlay addressing。升级到 `v0.73` 时，如果是存量环境，仍建议先选测试组启用 IPv6，确认 DNS、ACL、路由、Exit Node 和客户端版本后再扩大范围。
 - 不接外部 IdP、使用本地用户的部署，建议在首个管理员账号创建后开启 MFA，并保留备用管理员账号。
-- `v0.77.0` 是当前 `releases/latest` 指向的稳定版本；生产环境必须固定镜像标签，并先在测试环境验证后再更新。
-- Reverse Proxy / BYOP 能力仍按官方 Dashboard 和文档实际开放情况配置，不提前依赖未完整发布的前端流程。
+- `v0.77.1` 是当前 `releases/latest` 指向的稳定版本；生产环境必须固定镜像标签，并先在测试环境验证后再更新。
+- `v0.77.1` 的无交互变量只改变安装输入方式，不会把现有 Compose 自动安全升级到新版本。
+- Reverse Proxy、NetBird Proxy 与 CrowdSec 按官方脚本生成结果和当前 Dashboard
+  配置；启用前先定义公网暴露、证书、来源地址和回滚边界。
 
 详细版本核对记录见 [NetBird 上游版本状态](./upstream-version-status.md)。
 
 ## 8. 参考
 
 - 官方快速开始：https://docs.netbird.io/selfhosted/selfhosted-quickstart
-- 外部反向代理接入说明：https://docs.netbird.io/selfhosted/reverse-proxy
-- 本地配置说明（官方）：https://docs.netbird.io/selfhosted/configuration-files
+- 外部反向代理接入说明：https://docs.netbird.io/selfhosted/external-reverse-proxy
+- 本地配置说明（官方）：https://docs.netbird.io/selfhosted/maintenance/configuration-files
+- 官方升级说明：https://docs.netbird.io/selfhosted/maintenance/upgrade

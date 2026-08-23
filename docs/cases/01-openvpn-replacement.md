@@ -414,4 +414,4 @@ sudo systemctl stop netbird
 - Networks：https://docs.netbird.io/manage/networks
 - Access Control：https://docs.netbird.io/manage/access-control/manage-network-access
 - Setup Keys：https://docs.netbird.io/manage/peers/register-machines-using-setup-keys
-- Site-to-Site：https://docs.netbird.io/manage/networks/use-cases/site-to-site
+- Site-to-Site：https://docs.netbird.io/use-cases/remote-access/site-to-site

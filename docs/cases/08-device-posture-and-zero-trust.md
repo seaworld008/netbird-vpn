@@ -85,8 +85,11 @@ Dashboard：
 操作：
 
 1. 创建 client version posture check。
-2. 设置最低版本，例如 `0.77.0` 或团队已验证版本。
-3. 只绑定到生产资源策略，先不要影响所有资源。
+2. 按客户端自己的发布流设置团队已验证的最低版本。桌面 / 服务器 Core 主线可用
+   `0.77.1` 作为本轮候选；Android App 不能直接套用这个 Core 标签。
+3. 如果同一检查覆盖多个平台，逐个平台核对可安装 stable 和功能证据，不能用一个
+   数字假定所有 App 同步发布。
+4. 只绑定到生产资源策略，先不要影响所有资源。
 
 验证：
 
@@ -112,9 +115,21 @@ curl -k -I https://10.50.10.20
 
 Dashboard 中创建 Peer Network Range 检查，以实际 UI 支持的 allow / block 动作为准。
 
+Android 兼容性：
+
+- Peer Network Range 依赖客户端上报的 `NetworkAddresses`。
+- NetBird Core `v0.77.1` 合入了 Android 本机网络地址上报修复，但 Android App
+  使用独立版本和发布节奏，不能把 Core 标签当成可安装的 App 版本。
+- 截至 2026-08-23，Android stable `v0.5.0` 尚不能据此证明包含该修复；
+  `v0.6.0-rc.1` 也只是候选版，不能写成生产默认。
+- 把 Android 纳入这类检查前，先核对首个明确包含 PR `#7235` 的 Android stable
+  release notes，再在测试组分别从允许网段和非允许网段验证真实资源访问。没有
+  对应 stable 或实机证据时，不要对 Android 设备强制这项检查。
+
 验证：
 
 ```bash
+netbird version
 curl https://ifconfig.me
 netbird status
 nc -vz 10.50.30.10 22
@@ -205,6 +220,20 @@ curl -k -I --connect-timeout 5 https://10.50.10.20
 
 验证前先准备一个管理员设备，不要把自己锁在外面。
 
+### 9.4 Android 设备始终不满足 Peer Network Range
+
+先分别检查 Android App 版本、其 release notes 包含的 NetBird Core 版本，以及
+PR `#7235` 是否已进入该 stable。不能把 App 版本与 NetBird Core `v0.77.1`
+画等号，也不能把这类失败直接归因于 CIDR 配置。
+
+处理：
+
+1. 选择首个明确包含 PR `#7235` 的 Android stable；若尚未发布，保持该平台不
+   绑定 Peer Network Range。
+2. 重新连接 NetBird，让设备状态刷新。
+3. 分别在允许网段和非允许网段测试真实 TCP / HTTPS 资源。
+4. 单设备矩阵通过后再扩大范围。
+
 ## 10. 回滚
 
 1. 进入 `Access Control > Policies`。
@@ -232,3 +261,5 @@ curl -k -I https://10.50.10.20
 - Access Control：https://docs.netbird.io/manage/access-control/manage-network-access
 - Zero Trust Use Case：https://docs.netbird.io/use-cases/security/implement-zero-trust
 - Peer Network Range 示例：https://docs.netbird.io/manage/access-control/posture-checks/connecting-from-the-office
+- Android 网络地址上报修复：https://github.com/netbirdio/netbird/pull/7235
+- Android 客户端 releases：https://github.com/netbirdio/android-client/releases

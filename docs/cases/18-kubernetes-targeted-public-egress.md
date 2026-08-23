@@ -70,7 +70,7 @@ IP 和 Domain Resource 使用两个独立 Network。这样可以独立检查路�
 | IP 资源 | `198.51.100.28/32` | 文档保留地址 |
 | Domain 资源 | `*.private.example.com` | 不包含根域名 |
 | 允许端口 | TCP `80,443,30004-30006` | 按真实业务收窄 |
-| NetBird 镜像 | `netbirdio/netbird:0.77.0` | 使用团队验证的固定标签 |
+| NetBird 镜像 | `netbirdio/netbird:0.77.1` | 使用团队验证的固定标签 |
 
 ## 5. 上线前只读基线
 
@@ -94,9 +94,12 @@ kubectl get pod -A -o wide
 先使用目标节点上现有的测试 Pod，不要先部署 NetBird：
 
 ```bash
-kubectl -n <test-namespace> exec <existing-test-pod> -- \
+: "${TEST_NAMESPACE:?set the existing test Pod namespace}"
+: "${TEST_POD:?set the existing test Pod name}"
+
+kubectl -n "$TEST_NAMESPACE" exec "$TEST_POD" -- \
   wget -S --spider --timeout=10 https://198.51.100.28 2>&1
-kubectl -n <test-namespace> exec <existing-test-pod> -- \
+kubectl -n "$TEST_NAMESPACE" exec "$TEST_POD" -- \
   nslookup api.private.example.com
 ```
 
@@ -106,8 +109,10 @@ kubectl -n <test-namespace> exec <existing-test-pod> -- \
 ### 5.3 记录同机 WireGuard 和 Docker 基线
 
 ```bash
+: "${WIREGUARD_CONTAINER:?set the existing WireGuard container name}"
+
 docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
-docker inspect <existing-wireguard-container> \
+docker inspect "$WIREGUARD_CONTAINER" \
   --format 'started={{.State.StartedAt}} restarts={{.RestartCount}} network={{.HostConfig.NetworkMode}}'
 ip route show table all
 ip rule show
@@ -190,7 +195,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: netbird
-          image: netbirdio/netbird:0.77.0
+          image: netbirdio/netbird:0.77.1
           imagePullPolicy: IfNotPresent
           env:
             - name: NB_HOSTNAME
@@ -396,7 +401,9 @@ Get-NetRoute -AddressFamily IPv4 |
 ### 12.4 宿主机和集群无回归
 
 ```bash
-docker inspect <existing-wireguard-container> \
+: "${WIREGUARD_CONTAINER:?set the existing WireGuard container name}"
+
+docker inspect "$WIREGUARD_CONTAINER" \
   --format 'started={{.State.StartedAt}} restarts={{.RestartCount}} network={{.HostConfig.NetworkMode}}'
 ip route show table all
 ip rule show

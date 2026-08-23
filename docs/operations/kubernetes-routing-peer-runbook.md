@@ -40,7 +40,7 @@ CIDR 的环境。
 
 官方 Operator 的入门与 HA 示例见：
 
-- <https://docs.netbird.io/manage/integrations/kubernetes>
+- <https://docs.netbird.io/use-cases/kubernetes>
 - <https://docs.netbird.io/use-cases/kubernetes/route-to-a-kubernetes-service>
 
 最后一种场景使用独立的单节点安全模型，见
@@ -86,7 +86,7 @@ NetBird IP。
 | Pod CIDR | `10.244.0.0/16` |
 | Service CIDR | `10.96.0.0/12` |
 | 路由节点 | `worker-a`、`worker-b` |
-| 固定客户端镜像 | `netbirdio/netbird:0.77.0` |
+| 固定客户端镜像 | `netbirdio/netbird:0.77.1` |
 
 复制时必须换成真实网段、节点名、端口和团队已验证的固定镜像版本。
 
@@ -275,7 +275,7 @@ spec:
                       - "true"
       containers:
         - name: netbird
-          image: netbirdio/netbird:0.77.0
+          image: netbirdio/netbird:0.77.1
           imagePullPolicy: IfNotPresent
           env:
             - name: NODE_NAME
@@ -604,6 +604,8 @@ CIDR。Routing Peer 只部署在两个节点，不代表它只能访问那两个
 每周至少检查：
 
 ```bash
+: "${PEER_POD_ON_WORKER_A:?set the current Peer Pod name on worker-a}"
+
 kubectl -n netbird-routing get daemonset,pod -o wide
 kubectl -n netbird-routing get event --sort-by=.lastTimestamp | tail -30
 kubectl -n netbird-routing logs \
@@ -628,13 +630,13 @@ kubectl -n netbird-routing logs \
 核对镜像后再推送到私有仓库。能同时访问两个仓库时：
 
 ```bash
-docker pull netbirdio/netbird:0.77.0
-docker image inspect netbirdio/netbird:0.77.0 \
+docker pull netbirdio/netbird:0.77.1
+docker image inspect netbirdio/netbird:0.77.1 \
   --format '{{.Id}} {{json .RepoDigests}}'
-docker tag netbirdio/netbird:0.77.0 \
-  registry.example.com/netbird/netbird:0.77.0
-docker push registry.example.com/netbird/netbird:0.77.0
-docker image inspect registry.example.com/netbird/netbird:0.77.0 \
+docker tag netbirdio/netbird:0.77.1 \
+  registry.example.com/netbird/netbird:0.77.1
+docker push registry.example.com/netbird/netbird:0.77.1
+docker image inspect registry.example.com/netbird/netbird:0.77.1 \
   --format '{{.Id}} {{json .RepoDigests}}'
 ```
 
@@ -657,19 +659,21 @@ kubectl -n netbird-routing patch daemonset netbird-k8s-routing-peer \
   --type merge \
   -p '{"spec":{"updateStrategy":{"type":"OnDelete","rollingUpdate":null}}}'
 kubectl -n netbird-routing set image daemonset/netbird-k8s-routing-peer \
-  netbird=registry.example.com/netbird/netbird:0.77.0
+  netbird=registry.example.com/netbird/netbird:0.77.1
 
-kubectl -n netbird-routing delete pod <peer-on-worker-a>
+kubectl -n netbird-routing delete pod "$PEER_POD_ON_WORKER_A"
 ```
 
 第一个 Peer 重建后，至少核对：
 
 ```bash
-kubectl -n netbird-routing exec <new-peer-on-worker-a> -- netbird status
-kubectl -n netbird-routing exec <new-peer-on-worker-a> -- netbird status -d
-kubectl -n netbird-routing exec <new-peer-on-worker-a> -- \
+: "${NEW_PEER_POD_ON_WORKER_A:?set the rebuilt Peer Pod name on worker-a}"
+
+kubectl -n netbird-routing exec "$NEW_PEER_POD_ON_WORKER_A" -- netbird status
+kubectl -n netbird-routing exec "$NEW_PEER_POD_ON_WORKER_A" -- netbird status -d
+kubectl -n netbird-routing exec "$NEW_PEER_POD_ON_WORKER_A" -- \
   sha256sum /var/lib/netbird/default.json
-kubectl -n netbird-routing exec <new-peer-on-worker-a> -- \
+kubectl -n netbird-routing exec "$NEW_PEER_POD_ON_WORKER_A" -- \
   nc -zvw5 10.96.0.1 443
 kubectl get nodes
 kubectl -n kube-system get pod -o wide
@@ -686,7 +690,7 @@ ClusterIP、远端 NodePort、Pod 外联与监控 remote-write。全部通过后
 
 ## 15. 官方和社区参考
 
-- Kubernetes Operator：<https://docs.netbird.io/manage/integrations/kubernetes>
+- Kubernetes Operator：<https://docs.netbird.io/use-cases/kubernetes>
 - Kubernetes Routing Peer：<https://docs.netbird.io/use-cases/kubernetes/routing-peer>
 - 手工部署 Routing Peers：<https://docs.netbird.io/use-cases/kubernetes/routing-peers-and-kubernetes>
 - Routing Peer 工作原理：<https://docs.netbird.io/manage/networks/how-routing-peers-work>

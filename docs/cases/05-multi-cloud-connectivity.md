@@ -522,6 +522,6 @@ sudo systemctl stop netbird
 
 - Routing Peers 原理：https://docs.netbird.io/manage/networks/how-routing-peers-work
 - Networks：https://docs.netbird.io/manage/networks
-- Site-to-Site：https://docs.netbird.io/manage/networks/use-cases/site-to-site
+- Site-to-Site：https://docs.netbird.io/use-cases/remote-access/site-to-site
 - Access Control：https://docs.netbird.io/manage/access-control/manage-network-access
-- Resolve Overlapping Routes：https://docs.netbird.io/how-to/resolve-overlapping-routes
+- Resolve Overlapping Routes：https://docs.netbird.io/manage/network-routes/overlapping-routes

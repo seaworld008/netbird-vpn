@@ -56,9 +56,10 @@ description: 规划、审计并执行 NetBird 网络自动化配置，包括自�
 - 新场景优先 `Networks + Network Resources + Policies`；legacy `Network Routes` 仅在确有需要时使用，Exit Node 仍需关注。
 - 来源组、Routing Peer 组、资源组职责分离。数据库、SSH、Web 和环境边界按风险拆分，不创建方便但宽泛的 `All -> All`。
 - Policy 使用真实协议和最小端口；必须验证未授权来源。NetBird 只有 ALLOW 规则，不把列表顺序当成优先级或显式 DENY。
+- Policy API 的 `ports` 与 `port_ranges` 互斥；同一规则需要混合单端口和区间时，只提交 `port_ranges`，并把单端口写成 `start=end` 的范围。
 - Masquerade 默认开启；关闭前必须设计目标侧回程路由并验证真实源地址。
 - HTTPS 依赖主机名时优先 Domain Resource，并单独验证 DNS、证书、TCP 和目标解析结果；不要在同一 Network 中混入会覆盖域名解析结果的宽 IP Range。
-- 人员使用独立用户身份；Setup Key 注册设备，不代表人员。普通设备优先每机一个 One-off Key；批量 Reusable Key 必须短期、限次数并在注册后撤销。
+- 人员使用独立用户身份；Setup Key 注册设备，不代表人员。普通设备优先每机一个 One-off Key，且 One-off 只能使用一次，不能配置大于 `1` 的 `usage_limit`；批量注册必须改用短期、限次数的 Reusable Key，并在注册后撤销。
 - Setup Key 只用于首次注册；长期身份来自独立持久化 `/var/lib/netbird`。两个同时在线的 Peer 不得共享身份目录。
 - 多用途 Docker 主机上的 Standalone Routing Peer 默认独立 bridge + Userspace Netstack；`NB_USE_NETSTACK_MODE=true` 不等于 host 网络隔离。
 - Kubernetes Routing Peer 遵守单节点先行、独立身份、业务和监控联合回归。不得仅凭 Pod Ready、Connected 或 `ping` 宣布成功。
