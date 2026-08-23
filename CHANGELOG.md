@@ -4,6 +4,25 @@
 
 暂无未发布变更。
 
+## 0.6.0 - 2026-08-23
+
+- 将官方稳定基线更新到 NetBird `v0.77.1`，Dashboard 保持 `v2.91.1`；记录
+  release、peeled tag commit、安装资产与 Docker 多架构 manifest 核对结果
+- 明确本轮未执行 `v0.77.1` 真实生产升级，保留 `v0.77.0` 的历史实测证据，不把
+  文档和制品核对误报为服务端、Routing Peer 或客户端验收
+- 补充 `getting-started.sh` 无交互新装变量、必填项、默认反向代理、NetBird
+  Proxy / CrowdSec 开关，并强调该入口不是存量环境升级命令
+- 更新 combined server、Standalone / Kubernetes Routing Peer、定向出口与
+  Windows MSI 示例到 `0.77.1`，同时把已重定向的官方文档链接改为规范路径
+- 同步 One-off Setup Key 与 `usage_limit`、Policy API `ports` /
+  `port_ranges` 互斥契约，以及 Windows 路由、NRPT 和 Android Posture 兼容说明
+- 加固升级手册：固定目标镜像、保留升级前后清单、同步 Management 与 Reverse
+  Proxy 版本，并阻止在存储迁移后盲目只降级二进制
+- 完善 Reverse Proxy 与客户端接入案例的授权、非授权、真实协议、转发头信任
+  边界和回滚闭环；更新 Relay TCP/443 WebSocket 与 UDP/443 QUIC 口径
+- 扩展文档校验，阻止旧稳定版本、旧上游 commit 和已迁移官方链接重新进入当前
+  操作指南
+
 ## 0.5.0 - 2026-08-19
 
 - 新增 `netbird-network-operator` 跨 Agent Skill，把仓库案例和脱敏实战经验组织为盘点、设计、预览、执行、验证、凭据收尾和回滚闭环

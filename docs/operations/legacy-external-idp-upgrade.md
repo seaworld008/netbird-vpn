@@ -1,6 +1,10 @@
 # Legacy 外部 IdP 部署升级与回滚
 
 > 适用场景：早期 NetBird Docker Compose 使用独立 Management、Signal、Relay、Dashboard，并连接外部 IdP 和数据库。目标是在不改变现有账号、密码、Peer 身份和策略的前提下升级 NetBird 核心组件。
+>
+> 文中的 `0.77.0` 清单是一次已完成实测的历史证据，不代表当前稳定版。执行新
+> 升级前先查看[上游版本状态](../selfhosted/upstream-version-status.md)，并在目标
+> 版本上重新完成备份、分阶段切换与回归；不要机械替换历史证据中的版本号。
 
 ## 1. 先识别部署模型
 
@@ -101,9 +105,10 @@ services:
 先做静态检查：
 
 ```bash
+: "${BACKUP_DIR:?set the verified pre-upgrade backup directory}"
 docker compose config >/tmp/netbird-upgrade.rendered.yml
 docker compose config --images
-git diff --no-index backup/<backup-dir>/docker-compose.yml docker-compose.yml || true
+git diff --no-index "$BACKUP_DIR/docker-compose.yml" docker-compose.yml || true
 ```
 
 检查差异时，预期只有计划内的镜像标签和必要兼容字段变化。
@@ -202,7 +207,8 @@ nc -vz 192.0.2.10 443
 5. 重复完整验收矩阵。
 
 ```bash
-cp backup/<backup-dir>/docker-compose.yml .
+: "${BACKUP_DIR:?set the verified pre-upgrade backup directory}"
+cp "$BACKUP_DIR/docker-compose.yml" .
 docker compose config
 docker compose up -d
 docker compose ps

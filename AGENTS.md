@@ -238,16 +238,16 @@ iptables / nftables、重启 Docker 或重启业务容器。
 写 NetBird 行为时，优先参考：
 
 - https://docs.netbird.io/selfhosted/selfhosted-quickstart
-- https://docs.netbird.io/selfhosted/configuration-files
+- https://docs.netbird.io/selfhosted/maintenance/configuration-files
 - https://docs.netbird.io/manage/networks/how-routing-peers-work
 - https://docs.netbird.io/manage/networks
 - https://docs.netbird.io/manage/network-routes
-- https://docs.netbird.io/manage/network-routes/use-cases/exit-nodes
+- https://docs.netbird.io/use-cases/remote-access/exit-nodes
 - https://docs.netbird.io/manage/access-control/manage-network-access
 - https://docs.netbird.io/manage/peers/register-machines-using-setup-keys
 - https://docs.netbird.io/manage/reverse-proxy
 - https://docs.netbird.io/use-cases/kubernetes/routing-peers-and-kubernetes
-- https://docs.netbird.io/manage/integrations/kubernetes
+- https://docs.netbird.io/use-cases/kubernetes
 - https://docs.netbird.io/client/environment-variables
 - https://docs.netbird.io/help/troubleshooting-resource-connectivity
 
@@ -271,6 +271,7 @@ bash scripts/validate-docs.sh
 
 - 本地 Markdown 链接。
 - Markdown 代码围栏。
+- Bash / sh 代码块语法和会被 Shell 当作重定向的尖括号占位符。
 - YAML 代码块解析。
 - 旧版本号和旧官方路径残留。
 - 真实 Setup Key、明文 Kubernetes Secret 和漂移镜像标签。
@@ -280,12 +281,16 @@ bash scripts/validate-docs.sh
 ## 12. 提交流程建议
 
 ```bash
-git checkout -b codex/<short-topic>
+TOPIC="short-topic"
+FILES=(README.md docs/cases/NN-your-case.md)
+SUMMARY="summary"
+
+git checkout -b "codex/$TOPIC"
 ./scripts/validate-docs.sh
-git add <files>
-git commit -m "docs: <summary>"
-git push -u origin codex/<short-topic>
-gh pr create --base main --head codex/<short-topic>
+git add -- "${FILES[@]}"
+git commit -m "docs: $SUMMARY"
+git push -u origin "codex/$TOPIC"
+gh pr create --base main --head "codex/$TOPIC"
 ```
 
 PR 描述至少包含：

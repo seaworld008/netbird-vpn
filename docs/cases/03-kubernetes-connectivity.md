@@ -774,8 +774,8 @@ sudo systemctl stop netbird
 - Networks / Routing Peer 原理：https://docs.netbird.io/manage/networks/how-routing-peers-work
 - Network Routes 说明：https://docs.netbird.io/manage/network-routes
 - Kubernetes Routing Peers：https://docs.netbird.io/use-cases/kubernetes/routing-peers-and-kubernetes
-- Kubernetes Operator：https://docs.netbird.io/manage/integrations/kubernetes
-- Kubernetes Operator Routing Peer：https://docs.netbird.io/manage/integrations/kubernetes/routing-peer
+- Kubernetes Operator：https://docs.netbird.io/use-cases/kubernetes
+- Kubernetes Operator Routing Peer：https://docs.netbird.io/use-cases/kubernetes/routing-peer
 - Access Control：https://docs.netbird.io/manage/access-control/manage-network-access
 - Client 环境变量：https://docs.netbird.io/client/environment-variables
 - CentOS 7 nftables / iptables 同类问题：https://github.com/netbirdio/netbird/issues/2015

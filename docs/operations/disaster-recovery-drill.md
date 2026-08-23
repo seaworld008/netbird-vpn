@@ -57,8 +57,10 @@ docker volume ls | grep -Ei 'netbird|traefik|caddy'
 把实际卷名写入变量：
 
 ```bash
-NETBIRD_DATA_VOLUME="<actual_netbird_data_volume>"
-TRAEFIK_CERT_VOLUME="<actual_traefik_letsencrypt_volume>"
+NETBIRD_DATA_VOLUME="actual_netbird_data_volume"
+TRAEFIK_CERT_VOLUME="actual_traefik_letsencrypt_volume"
+test "$NETBIRD_DATA_VOLUME" != "actual_netbird_data_volume"
+test "$TRAEFIK_CERT_VOLUME" != "actual_traefik_letsencrypt_volume"
 ```
 
 备份 NetBird 数据卷：
@@ -302,6 +304,6 @@ docker volume rm netbird_dr_data netbird_dr_letsencrypt
 ## 12. 官方参考
 
 - NetBird 自建快速开始：https://docs.netbird.io/selfhosted/selfhosted-quickstart
-- NetBird 配置文件参考：https://docs.netbird.io/selfhosted/configuration-files
+- NetBird 配置文件参考：https://docs.netbird.io/selfhosted/maintenance/configuration-files
 - 本地用户与加密密钥说明：https://docs.netbird.io/selfhosted/identity-providers/local
 - NetBird 控制台与管理入口：https://docs.netbird.io/manage/control-center

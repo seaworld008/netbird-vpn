@@ -22,6 +22,8 @@
   - `12-client-platform-onboarding.md`：Windows、macOS、Linux 安装升级和一次性 Setup Key 接入
   - `18-kubernetes-targeted-public-egress.md`：Kubernetes 指定节点定向代理公网 IP / 域名、固定白名单出口和同机 WireGuard 无回归验收
 
+  `13` 至 `17` 已为路线图中的后续生产场景预留编号，并非本地文件缺失；正式入口会在对应文档达到仓库完成标准后加入。
+
 - `operations/`
   - `containerized-routing-peer-runbook.md`：云 VPC 容器化 Routing Peer、持久身份、Setup Key 清除、双云验收和回滚
   - `kubernetes-routing-peer-runbook.md`：集群内 Routing Peer、双节点身份、分阶段上线、Netstack 兼容、监控验证和局部隔离

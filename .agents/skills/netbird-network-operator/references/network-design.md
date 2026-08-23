@@ -65,6 +65,7 @@ Domain 与覆盖其解析 IP 的宽 IP Range 不应放在同一 Network，否则
 
 - 从真实业务协议反推端口，不用 `ping` 代替 TCP / UDP / HTTPS。
 - 数据库、SSH、Web、Kubernetes API 和监控分别授权。
+- Public API 的 `ports` 与 `port_ranges` 不能同时出现在同一条规则中，创建和更新都会拒绝这种请求。若业务同时需要单端口与区间，统一使用 `port_ranges`，例如 `22` 写成 `{"start": 22, "end": 22}`，`8000-8100` 写成 `{"start": 8000, "end": 8100}`。
 - 双向流量只在应用确实需要时开启；不要因为排障方便就设成全双向。
 - 默认组 `All` 不能删除且自动包含所有 Peer，不用于生产最小权限来源。
 - 上线前准备一台明确不在来源组的 Peer 做拒绝测试。
@@ -98,9 +99,10 @@ Routing Peer 是数据面组件。高可用不是复制同一 `/var/lib/netbird`
 
 ## 7. Setup Key 和身份
 
-- 普通长期设备：每台一个有名称的 One-off Key，或让人员通过 SSO 登录。
+- 普通长期设备：每台一个有名称的 One-off Key，控制台按 `usage_limit=1` 创建，或让人员通过 SSO 登录。
 - 两个受控手工 Peer 的一次性批量注册：可用短有效期、usage limit=2 的 Reusable Key；完成后撤销。
 - 自动弹性工作负载：优先 Operator、外部 Secret 管理或明确的 Ephemeral 模型，不保留无限次 Key。
+- One-off 是单次使用类型，不是“可填写次数的一次性批次”。NetBird v0.77.1 起，Public API 对 One-off 的 `usage_limit > 1` 返回 HTTP `422`；兼容调用仍可发送 `0` 表示未指定，但这不会把 One-off 变成可重复使用。需要注册多台设备时必须选择 Reusable，并把上限设为计划设备数。
 - 已使用的 One-off Key 不能恢复明文或重新命名；审计依赖预先命名、Peer 资产名和事件记录。
 - Key 过期或撤销不会让已注册 Peer 下线；持久身份目录才是重建和灾备对象。
 
