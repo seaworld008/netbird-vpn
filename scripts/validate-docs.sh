@@ -259,47 +259,110 @@ print(f"parsed yaml blocks: {count}")
 PY
 
 echo "==> Checking stale version markers"
-if rg -n "v0\\.71\\.4|v0\\.73\\.2|v2\\.90\\.9|v0\\.76\\.3|v2\\.90\\.10|v0\\.77\\.0|netbirdio/(netbird|netbird-server|management|signal|relay):0\\.77\\.0|netbird_installer_0\\.77\\.0|2026-06-05|2026-07-01|512899d82|0358be2|4e5b63249032|how-to/networks|how-to/resolve-overlapping-routes|use-cases/setup-site-to-site-access|use-cases/cloud/routing-peers-and-kubernetes|manage/integrations/kubernetes|manage/network-routes/use-cases/exit-nodes|manage/networks/accessing-restricted-domain-resources|manage/networks/use-cases/site-to-site|manage/peers/access-infrastructure/setup-keys-add-servers-to-network|selfhosted/configuration-files|selfhosted/reverse-proxy" . --glob '!scripts/validate-docs.sh' --glob '!CHANGELOG.md' --glob '!docs/selfhosted/upstream-version-status.md' --glob '!docs/operations/legacy-external-idp-upgrade.md' --glob '!docs/decisions/ADR-001-documentation-operating-model.md'; then
-  echo "Found stale version markers or old official-doc paths" >&2
-  exit 1
-fi
+python - <<'PY'
+from pathlib import Path
+import re
+import sys
 
-for file in \
-  README.md \
-  部署说明.md \
-  docs/selfhosted/quickstart-modern.md \
-  docs/selfhosted/upstream-version-status.md \
-  docs/selfhosted/docker-compose-config-cheatsheet.md; do
-  if ! rg -q "v?0\\.77\\.1" "$file"; then
-    echo "Current NetBird v0.77.1 baseline missing from $file" >&2
-    exit 1
-  fi
-done
+stale = re.compile(
+    r"v0\.71\.4|v0\.73\.2|v2\.90\.9|v0\.76\.3|v2\.90\.10|v0\.77\.0|"
+    r"netbirdio/(?:netbird|netbird-server|management|signal|relay):0\.77\.0|"
+    r"netbird_installer_0\.77\.0|2026-06-05|2026-07-01|512899d82|0358be2|"
+    r"4e5b63249032|how-to/networks|how-to/resolve-overlapping-routes|"
+    r"use-cases/setup-site-to-site-access|use-cases/cloud/routing-peers-and-kubernetes|"
+    r"manage/integrations/kubernetes|manage/network-routes/use-cases/exit-nodes|"
+    r"manage/networks/accessing-restricted-domain-resources|"
+    r"manage/networks/use-cases/site-to-site|"
+    r"manage/peers/access-infrastructure/setup-keys-add-servers-to-network|"
+    r"selfhosted/configuration-files|selfhosted/reverse-proxy"
+)
+excluded = {
+    Path("scripts/validate-docs.sh"),
+    Path("CHANGELOG.md"),
+    Path("docs/selfhosted/upstream-version-status.md"),
+    Path("docs/operations/legacy-external-idp-upgrade.md"),
+    Path("docs/decisions/ADR-001-documentation-operating-model.md"),
+}
+bad = []
 
-STATUS_FILE="docs/selfhosted/upstream-version-status.md"
-if ! rg -qF '| NetBird Server / Client | `v0.77.1` | 2026-08-21 | GitHub `releases/latest`，`prerelease=false` |' "$STATUS_FILE"; then
-  echo "Current NetBird stable row is missing or stale in $STATUS_FILE" >&2
-  exit 1
-fi
-if ! rg -qF '| NetBird Dashboard | `v2.91.1` | 2026-08-14 | Dashboard GitHub `releases/latest`，`prerelease=false` |' "$STATUS_FILE"; then
-  echo "Current Dashboard stable row is missing or stale in $STATUS_FILE" >&2
-  exit 1
-fi
-if ! rg -qF 'NetBird `v0.77.1` peeled commit：`79a06720b684768b421f0a54f3bb14f22704994f`' "$STATUS_FILE"; then
-  echo "Current NetBird stable tag commit evidence is missing from $STATUS_FILE" >&2
-  exit 1
-fi
+for file in Path(".").rglob("*"):
+    if not file.is_file() or ".git" in file.parts:
+        continue
+    relative = Path(*file.parts[1:]) if file.parts and file.parts[0] == "." else file
+    if relative in excluded:
+        continue
+    try:
+        lines = file.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeError):
+        continue
+    for number, line in enumerate(lines, 1):
+        if stale.search(line):
+            bad.append(f"{file}:{number}: stale version marker or official-doc path")
+
+required_baselines = [
+    Path("README.md"),
+    Path("部署说明.md"),
+    Path("docs/selfhosted/quickstart-modern.md"),
+    Path("docs/selfhosted/upstream-version-status.md"),
+    Path("docs/selfhosted/docker-compose-config-cheatsheet.md"),
+]
+for file in required_baselines:
+    if not re.search(r"v?0\.77\.1", file.read_text(encoding="utf-8")):
+        bad.append(f"{file}: current NetBird v0.77.1 baseline missing")
+
+status_file = Path("docs/selfhosted/upstream-version-status.md")
+status_text = status_file.read_text(encoding="utf-8")
+required_status_lines = [
+    "| NetBird Server / Client | `v0.77.1` | 2026-08-21 | GitHub `releases/latest`，`prerelease=false` |",
+    "| NetBird Dashboard | `v2.91.1` | 2026-08-14 | Dashboard GitHub `releases/latest`，`prerelease=false` |",
+    "NetBird `v0.77.1` peeled commit：`79a06720b684768b421f0a54f3bb14f22704994f`",
+]
+for expected in required_status_lines:
+    if expected not in status_text:
+        bad.append(f"{status_file}: current stable status evidence is missing: {expected}")
+
+if bad:
+    print("\n".join(bad), file=sys.stderr)
+    raise SystemExit(1)
+PY
 
 echo "==> Checking production image tags"
-if rg -n "image:\\s*[^#[:space:]]+:latest([[:space:]]|$)" . --glob '*.yml' --glob '*.yaml' --glob '*.md'; then
-  echo "Found a production image using the latest tag" >&2
-  exit 1
-fi
-if rg -n "netbirdio/(dashboard|netbird-server|netbird|management|signal|relay|reverse-proxy):(latest|main)\\b|\\$\\{[^}]*:-(latest|main)\\}" \
-  README.md 部署说明.md docs .agents; then
-  echo "Found a drifting NetBird image reference" >&2
-  exit 1
-fi
+python - <<'PY'
+from pathlib import Path
+import re
+import sys
+
+generic_latest = re.compile(r"image:\s*[^#\s]+:latest(?:\s|$)", re.IGNORECASE)
+inline_drift = re.compile(
+    r"netbirdio/(?:dashboard|netbird-server|netbird|management|signal|relay|reverse-proxy):"
+    r"(?:latest|main)\b|\$\{[^}]*:-(?:latest|main)\}",
+    re.IGNORECASE,
+)
+bad = []
+
+for file in [*Path(".").rglob("*.md"), *Path(".").rglob("*.yml"), *Path(".").rglob("*.yaml")]:
+    if ".git" in file.parts:
+        continue
+    for number, line in enumerate(file.read_text(encoding="utf-8").splitlines(), 1):
+        if generic_latest.search(line):
+            bad.append(f"{file}:{number}: production image uses latest")
+
+for root in [Path("README.md"), Path("部署说明.md"), Path("docs"), Path(".agents")]:
+    files = [root] if root.is_file() else [path for path in root.rglob("*") if path.is_file()]
+    for file in files:
+        try:
+            lines = file.read_text(encoding="utf-8").splitlines()
+        except (OSError, UnicodeError):
+            continue
+        for number, line in enumerate(lines, 1):
+            if inline_drift.search(line):
+                bad.append(f"{file}:{number}: drifting NetBird image reference")
+
+if bad:
+    print("\n".join(bad), file=sys.stderr)
+    raise SystemExit(1)
+PY
+
 python - <<'PY'
 from pathlib import Path
 import re
