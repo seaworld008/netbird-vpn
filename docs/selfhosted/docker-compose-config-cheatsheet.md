@@ -221,17 +221,17 @@ docker compose up -d
 
 ## 8. 生产镜像标签清单
 
-本次核对的稳定基线是 NetBird `0.77.1`、Dashboard `v2.91.1`。新安装使用
+本次核对的稳定基线是 NetBird `0.78.1`、Dashboard `v2.92.0`。新安装使用
 combined `netbird-server`；下面只展示标签写法，不是可直接覆盖现有拓扑的完整
-Compose。本仓库已确认这些标签存在，但没有用 `v0.77.1` 执行真实生产升级；
-生产使用前仍要在自己的测试环境完成备份、升级和回归：
+Compose。本仓库已实测 `v0.78.1` 的存量外部 IdP 控制面与 Routing Peer 升级；
+组合容器的新装与 Reverse Proxy 未在本轮部署，生产使用前仍要在自己的测试环境完成备份、升级和回归：
 
 ```yaml
 services:
   dashboard:
-    image: netbirdio/dashboard:v2.91.1
+    image: netbirdio/dashboard:v2.92.0
   netbird-server:
-    image: netbirdio/netbird-server:0.77.1
+    image: netbirdio/netbird-server:0.78.1
 ```
 
 升级前后都保存镜像清单：
@@ -254,7 +254,7 @@ version: "2.4"
 
 services:
   routing-peer:
-    image: netbirdio/netbird:0.77.1
+    image: netbirdio/netbird:0.78.1
     container_name: netbird-routing-peer
     restart: unless-stopped
     networks:
@@ -349,3 +349,12 @@ docker compose logs --since=10m --tail=300
 - Routing Peer 在线，授权资源的真实 TCP/HTTPS 请求可达。
 - 非授权账号或设备无法访问同一资源。
 - 业务请求前后 Routing Peer 的发送/接收计数增长，证明流量确实经过 NetBird 数据平面。
+
+## 11. 直连端口与 QUIC 不能只改安全组
+
+- Routing Peer 的 WireGuard UDP 端口常见为 `51820`，必须核对实际监听及映射；
+  TCP 大端口范围不会放行 UDP。只给需要公网直连的节点增加相应规则。
+- UDP 443 必须明确属于 Relay QUIC 还是反向代理 HTTP/3。前者需要 Relay TLS，
+  不能只看到宿主机有 UDP 443 就认定已启用。
+- 文件证书续期后，确认进程加载了新证书；挂载目录发生更新不等于进程自动重载。
+- 实施步骤、证书处理与局部回滚见 [QUIC 运维手册](../operations/relay-quic-runbook.md)。

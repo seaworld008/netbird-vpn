@@ -218,6 +218,11 @@ docker compose ps
 
 ## 9. 升级记录模板
 
+2026-09-10 又完成 `0.78.1` / Dashboard `v2.92.0` 的存量升级，随后在独立回滚点
+启用 Relay QUIC 并逐个升级五个在用 Routing Peer。新增流程见
+[QUIC 运维](relay-quic-runbook.md) 与 [当前版本证据](../selfhosted/upstream-version-status.md)。
+上面 `0.77.0` 段落是历史记录，未把旧测试机械改成新版本测试。
+
 ```text
 变更时间：
 升级前 NetBird / Dashboard：

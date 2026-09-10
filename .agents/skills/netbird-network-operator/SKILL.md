@@ -58,6 +58,10 @@ description: 规划、审计并执行 NetBird 网络自动化配置，包括自�
 - Policy 使用真实协议和最小端口；必须验证未授权来源。NetBird 只有 ALLOW 规则，不把列表顺序当成优先级或显式 DENY。
 - Policy API 的 `ports` 与 `port_ranges` 互斥；同一规则需要混合单端口和区间时，只提交 `port_ranges`，并把单端口写成 `start=end` 的范围。
 - Masquerade 默认开启；关闭前必须设计目标侧回程路由并验证真实源地址。
+- WireGuard 直连端口按实际 Peer 监听和容器映射核对，常见 `51820/udp`；TCP
+  大范围不放行 UDP。UDP443若被HTTP/3接收，不能视为Relay QUIC已启用。
+- 间歇超时先区分TCP建连与应用响应，按同一窗口的命名空间计数、定向包头和
+  直连/中继对照定位，不把累计重传、Connected、QUIC Available或WS101单独当验收。
 - HTTPS 依赖主机名时优先 Domain Resource，并单独验证 DNS、证书、TCP 和目标解析结果；不要在同一 Network 中混入会覆盖域名解析结果的宽 IP Range。
 - 人员使用独立用户身份；Setup Key 注册设备，不代表人员。普通设备优先每机一个 One-off Key，且 One-off 只能使用一次，不能配置大于 `1` 的 `usage_limit`；批量注册必须改用短期、限次数的 Reusable Key，并在注册后撤销。
 - Setup Key 只用于首次注册；长期身份来自独立持久化 `/var/lib/netbird`。两个同时在线的 Peer 不得共享身份目录。
@@ -87,3 +91,5 @@ description: 规划、审计并执行 NetBird 网络自动化配置，包括自�
 - [场景路由](references/scenario-router.md)：本仓库所有案例、Runbook 和 ADR 的选择表。
 - [验证与回滚](references/verification-and-rollback.md)：跨层验收矩阵、停止条件和回滚顺序。
 - [脱敏实战经验](references/live-lessons.md)：其他实战会话中已经验证或踩过的关键问题。
+- [QUIC 运维](../../../docs/operations/relay-quic-runbook.md) 与
+  [超时诊断](../../../docs/operations/remote-development-timeouts.md)：端口、证书、包头与多服务验收。

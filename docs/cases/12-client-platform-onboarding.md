@@ -24,7 +24,7 @@
 - 每台人员设备使用单独的 One-off Key，usage limit=`1`；One-off 不配置大于 `1` 的上限。
 - 已登记设备负责人和权限复核 / 回收日期；到期动作是处理 Peer、组或 Policy，不是只等待 Key 过期。
 - 已记录授权目标的域名、IP、协议和端口，并准备一台不在授权组的 Peer 做拒绝测试。
-- Windows 使用 v0.77.1 的固定 MSI 地址和官方 SHA256；macOS / Linux 明确原安装渠道。
+- Windows 使用 v0.78.1 的固定 MSI 地址和官方 SHA256；macOS / Linux 明确原安装渠道。
 - 升级已有设备前，已记录 Peer 名称、NetBird IP、客户端版本、路由、DNS 和身份目录备份。
 - 已定义失败停止条件：Management / Signal 未连接、Peer 进入错误组、非授权设备可访问或无关网络回归时停止扩大范围。
 
@@ -66,14 +66,14 @@ Key，参见 [用 Setup Key 做自动化接入](09-automation-with-setup-keys.md
 在管理员 PowerShell 中校验安装包签名：
 
 ```powershell
-$Msi = ".\netbird_installer_0.77.1_windows_amd64.msi"
+$Msi = ".\netbird_installer_0.78.1_windows_amd64.msi"
 Get-AuthenticodeSignature $Msi |
   Format-List Status, StatusMessage, SignerCertificate
 
 $Release = Invoke-RestMethod `
-  "https://api.github.com/repos/netbirdio/netbird/releases/tags/v0.77.1"
+  "https://api.github.com/repos/netbirdio/netbird/releases/tags/v0.78.1"
 $Asset = $Release.assets |
-  Where-Object { $_.name -eq "netbird_installer_0.77.1_windows_amd64.msi" }
+  Where-Object { $_.name -eq "netbird_installer_0.78.1_windows_amd64.msi" }
 $Asset | Select-Object name, digest, browser_download_url
 
 $ExpectedHash = $Asset.digest -replace "^sha256:", ""
@@ -83,10 +83,10 @@ if (-not $ExpectedHash -or $ActualHash -ne $ExpectedHash) {
 }
 ```
 
-只有签名状态为 `Valid`，且 SHA256 与 v0.77.1 官方 Release API 的 asset digest
+只有签名状态为 `Valid`，且 SHA256 与 v0.78.1 官方 Release API 的 asset digest
 一致时才安装。当前 amd64 MSI 的预期值为
-`sha256:06b10ec394375400ce11fe8f8688b5f6af06b23942f7bb72d8acc5a6adb1530a`。
-`netbird_0.77.1_checksums.txt` 不包含 MSI，不能用它代替上面的 asset digest 核对。
+`sha256:91fdc2bc4ecd45e0a3773ac06587edb023d64f138dadcc1bb672d14de842cbc5`。
+`netbird_0.78.1_checksums.txt` 不包含 MSI，不能用它代替上面的 asset digest 核对。
 
 安装后连接：
 
@@ -231,7 +231,7 @@ Copy-Item "C:\ProgramData\Netbird" $BackupPath -Recurse
 
 1. 保留 `C:\ProgramData\Netbird` 备份。
 2. 卸载旧客户端。
-3. 安装已校验签名和 SHA256 的 v0.77.1 MSI。
+3. 安装已校验签名和 SHA256 的 v0.78.1 MSI。
 4. 如果旧卸载器删除了同名 Windows 服务，再执行一次新版 MSI 的 Repair。
 5. 启动服务并检查原 Peer 身份是否保持。
 

@@ -1,102 +1,125 @@
 # NetBird 上游版本状态
 
-> 最近核对时间：2026-08-23
+> 最近核对时间：2026-09-10。发布时间按上游 UTC 日期记录。
 
 ## 当前稳定基线
 
 | 组件 | 稳定版本 | 发布时间 | 核对依据 |
 | --- | --- | --- | --- |
-| NetBird Server / Client | `v0.77.1` | 2026-08-21 | GitHub `releases/latest`，`prerelease=false` |
-| NetBird Dashboard | `v2.91.1` | 2026-08-14 | Dashboard GitHub `releases/latest`，`prerelease=false` |
+| NetBird Server / Client | `v0.78.1` | 2026-09-04 | GitHub `releases/latest`，`prerelease=false` |
+| NetBird Dashboard | `v2.92.0` | 2026-09-03 | Dashboard GitHub `releases/latest`，`prerelease=false` |
 
-- NetBird release：https://github.com/netbirdio/netbird/releases/tag/v0.77.1
-- NetBird compare：https://github.com/netbirdio/netbird/compare/v0.77.0...v0.77.1
-- Dashboard release：https://github.com/netbirdio/dashboard/releases/tag/v2.91.1
-- NetBird `v0.77.1` peeled commit：`79a06720b684768b421f0a54f3bb14f22704994f`
-- 核对时 NetBird `main` HEAD：`ee253feddfd08a1b559d4014cbcf8d64cabed937`
-- 新部署继续使用官方 `releases/latest/download/getting-started.sh` 作为生成配置的入口。
-- 生产 Compose 必须把每个镜像固定到已验证标签，不能把 `latest` 当作部署版本。
+- [NetBird release](https://github.com/netbirdio/netbird/releases/tag/v0.78.1)
+- [跨版本变更](https://github.com/netbirdio/netbird/compare/v0.77.1...v0.78.1)
+- [Dashboard release](https://github.com/netbirdio/dashboard/releases/tag/v2.92.0)
+- NetBird `v0.78.1` peeled commit：`23a1487c26c5f00353c046bc818069189650dbfb`
+- 核对时 `main` HEAD：`9615d2ab162e7badee5c8b4e84048ce49e1db6e7`，仅为观察值，不作为部署目标。
+- 首次安装继续用官方 `releases/latest/download/getting-started.sh`，生成后固定镜像。
+- 存量外部 IdP 不强行迁移到组合容器，按现有拓扑分阶段升级。
 
-本轮已经完成 `v0.77.1` 的官方 release、release assets、脚本头部、官方文档和
-Docker OCI manifest 可用性核对。`netbird`、`netbird-server`、`reverse-proxy`、
-`management`、`signal`、`relay` 的 `0.77.1` 标签以及 Dashboard `v2.91.1`
-均能解析到 Linux 多架构 manifest。Windows MSI 与独立 checksums 资产均存在，
-但 MSI 没有列入 checksums 文本；本文的 MSI SHA256 通过 Release API 的 asset
-digest 单独核对。
+## 本轮制品核对
 
-本轮**没有**使用 `v0.77.1` 执行真实服务端、Routing Peer 或客户端升级，因此
-不能把下面 `v0.77.0` 的生产验证结论自动继承给补丁版本。生产环境仍要先在隔离
-环境验证，再把确认过的标签或 digest 写入 Compose / Kubernetes 清单。
+官方 Release API 的 `getting-started.sh` digest 与实际下载SHA256一致：
 
-## 已有真实升级证据（`v0.77.0`）
+```text
+a8d17cdb2229c680514063a6893d117aad55343d8dd2c703d1aa1033577b1570
+```
 
-本仓库已完成以下 `v0.77.0` 脱敏生产路径验证：
+Windows amd64 MSI 的官方 asset digest 为：
 
-- Legacy 独立 Management / Signal / Relay 与外部 IdP 拓扑原地升级，Dashboard
-  同步升级到 `v2.91.1`，外围 IdP、数据库、Caddy 和 Coturn 保持原版本。
-- Standalone Routing Peer 保持原部署模型、身份和资源，只替换固定镜像标签。
-- Kubernetes Userspace Routing Peer 先验证单实例，再把双 Peer 按节点逐个升级；
-  NetBird IP、身份文件、Pod CIDR、Service CIDR 和真实 TCP 均保持正常。
-- 定向公网资源的单副本 Routing Peer 通过授权客户端 `/32` 路由、真实 HTTPS 和
-  Peer 传输计数增长验证，同机 Docker WireGuard 未重启。
+```text
+91fdc2bc4ecd45e0a3773ac06587edb023d64f138dadcc1bb672d14de842cbc5
+```
 
-这表示上述路径对 `v0.77.0` 已有真实升级证据，不表示 `v0.77.1` 或所有 CNI、
-内核和身份源组合可以跳过自己的备份与回归。
+本轮没有安装MSI；发放客户端时仍需对实际下载文件做SHA256和签名校验。
+不要把不含该MSI条目的checksums文本当作已校验安装包。
 
-脚本入口与生产镜像标签解决的是两个不同问题：脚本入口用于获取官方当前安装逻辑；固定标签用于保证重启、扩容和灾备恢复时不会无意升级。
+已在实际 Linux amd64 主机拉取并记录以下官方镜像：
 
-## `v0.74` 到 `v0.77.1` 的关注点
+| 镜像 | 官方 RepoDigest 的 SHA256 |
+| --- | --- |
+| `netbirdio/management:0.78.1` | `e114d2c8e699da19a05678c0600b821c59587541c404ac550cc062b96c3d3f54` |
+| `netbirdio/signal:0.78.1` | `ebc42056ce135b5163554fad47c5b1456673e7132dc4fad9f9cc34d84c70feb4` |
+| `netbirdio/relay:0.78.1` | `d5df6e3fe802734164fbe81d814d4575d7c29b29f9e03c95b49f18c10efd7958` |
+| `netbirdio/netbird:0.78.1` | `c0b492f320e1251ac0655e785fa288e935a0b7b16365d14fdcbc8bf75dc5b0a0` |
+| `netbirdio/dashboard:v2.92.0` | `fa2d8b02a81761e4d2a22df4041d13316b7635f1e93273eafeb53d4991e55b5a` |
 
-升级前应阅读跨越版本的完整 release notes。对本仓库场景影响较大的变化包括：
+另通过官方 OCI Registry 核对组合容器与 Proxy 的 `0.78.1` manifest，均包含
+Linux amd64/arm64/arm；这是制品可用性检查，不是现场部署验收：
 
-- `v0.74` 增加 Agent Network 等能力，并继续演进连接和路由逻辑。
-- `v0.75` 更新桌面客户端界面和配置管理，并增强自建管理及网络能力。Windows 客户端升级后要复核服务、配置目录、Peer 身份和路由。
-- `v0.76.0` 是安全相关版本，旧部署不应长期停留在更早版本。
-- `v0.76.3` 包含连接唤醒、用户变更影响范围和 Reverse Proxy 授权等补丁。
-- `v0.77.0` 继续演进 Agent Network、客户端路由、IPv6 转发和
-  调试信息匿名化。Routing Peer、Domain Resource、其他 WireGuard VPN 和旧内核
-  环境升级后必须重做真实数据面回归。
-- `v0.77.1` 是当前稳定补丁版，release notes 未列出独立的 breaking change 或
-  迁移章节。它为 `getting-started.sh` 增加环境变量驱动的无交互新装，修复
-  Windows 路由排序、NRPT 清理和静默升级，并增强 Android SSH、网络切换与
-  Posture 网络地址上报。
-- Management 现在明确拒绝 One-off Setup Key 的 `usage_limit > 1`；需要多次
-  注册时必须使用 Reusable Key。Policy API 的 `ports` 与 `port_ranges` 互斥，
-  同一规则混合单端口和范围时，应全部用 range 表示。
-- Dashboard `v2.91.1` 修复版本构建信息识别；前端升级后仍要核对显示版本与实际
-  镜像标签一致。
+| 镜像 | manifest SHA256 |
+| --- | --- |
+| `netbirdio/netbird-server:0.78.1` | `3086534361a18573b85897383a0753a97b8c75d68dee9926fbd7eccab1f2fe89` |
+| `netbirdio/reverse-proxy:0.78.1` | `d79cf51926c9d4640370c17b13904441f23e2dbb22cd67ff5a453f1cf7bd28b9` |
 
-生产升级仍要经过备份、测试、分阶段替换和业务验收。
+部分节点无法直连镜像仓库时，导入已校验归档，导入后的客户端image ID与可信
+下载主机一致。固定官方标签与 `IfNotPresent` 允许现有节点复用缓存；新增或
+重建节点仍需预置镜像，或使用有授权的镜像仓库。归档不能替代新节点准备。
 
-不要只看服务端容器是否为 `Up`。升级验收至少覆盖管理端登录、Peer 在线、直连/Relay、DNS、Routing Peer、授权资源、非授权资源和真实应用协议。
+## 本轮真实部署与验收
 
-启用 NetBird Reverse Proxy 时，还要让 Management 与 Proxy 同步升级。官方说明
-指出：从 `v0.76.1` 起，如果 Proxy 比 Management 新，Agent Network LLM cost
-metering 会被静默停用并只留下 warning。升级前后应比较 Proxy 的实际版本与
-`GET /api/instance/version` 返回的 `management_current_version`。
+- 外部IdP存量部署：Management/Signal/Relay从 `0.77.0` 升级到 `0.78.1`，
+  Dashboard从 `v2.91.1` 到 `v2.92.0`；配置、SQLite在线备份、完整性与对象数量
+  已核验，身份源数据库已备份。未升级IdP、PostgreSQL或Coturn。
+- 在新控制面回滚点之上单独启用Relay QUIC；Caddy的UDP443移交同一Relay，
+  保留TCP443 WebSocket。独立客户端显示 `via quic`，WS升级握手返回101。
+- 文件证书的宿主机检查任务已部署，指纹相同不重启；域名错误拒绝重载，模拟
+  更新只作用于指定Relay并在指纹验证后记录状态。自然ACME续期仍需后续监控。
+- 两台Standalone、两个Kubernetes路由节点和一个定向出口共五个在用Peer逐个
+  升级，保持IP、公钥身份、FQDN、资源与原有Kernel/Userspace模式。
+- Kubernetes单节点后再双节点验证Pod IP、ClusterIP、远端NodePort、Pod外联；
+  监控发送计数增长、错误计数未增加、队列为零。普通业务Pod重启次数保持；
+  一项原本已完成的观察Job在窗口内被正常清理。
+- 控制入口、原路由及业务应用协议完成回归。测试客户端的业务路径为P2P；
+  未把QUIC Available或WS101写成强制中继的完整性能测试。
+- 升级后两个来源各六分钟探测，加本机经VPN到私网MQ的补充测试，共811项
+  测量结果、0失败。本机Redis常规36/36、额外15条并发成功，两条长连接PING
+  最大约11.6ms；这些是此次有限窗口的证据，不是长期稳定性保证。
 
-## 推荐镜像清单
+组合 `netbird-server` 新装、Reverse Proxy、Windows/MSI安装和所有平台组合没有
+在本轮执行部署。不要把上面的存量路径结果扩展成所有场景均已验证。
 
-新安装以官方 Quickstart 生成的 combined server 拓扑为准：Management、Signal、
-Relay 和 STUN 集中在 `netbird-server`。下面只展示当前稳定候选标签，不是完整
-Compose，也不替代环境级验证：
+详细步骤见 [QUIC手册](../operations/relay-quic-runbook.md)、
+[间歇超时排查](../operations/remote-development-timeouts.md) 和
+[Kubernetes路由手册](../operations/kubernetes-routing-peer-runbook.md)。
+
+## 跨版本注意点
+
+升级前阅读完整release notes，重点包括：
+
+- `v0.78.1` 修复SQLite网络映射对按Peer指定Routing Peer的Networks的处理。
+  所以上线后必须核对原资源、来源策略和实际数据面，不能只看容器Up。
+- `v0.78.0` 调整lazy connection、统一ACL过滤，修复ICEBind竞争、握手监听
+  时序和网络丢失后的连接清理；Relay/客户端使用更新的Go/QUIC依赖。这些变更
+  值得回归，不等于已证明它们能修复某一条现场线路的丢包。
+- 远程debug jobs需要管理员明确opt-in；不要因升级后不可用就自动开启远程作业
+  或上传诊断包。
+- Windows DNS/NRPT行为变化，升级Windows客户端须重新检查DNS、路由和其他VPN。
+- 启用Reverse Proxy时，仍要同步核对Management/Proxy兼容版本和Rosenpass变化。
+- One-off使用次数、Policy `ports`/`port_ranges`互斥等既有约束继续适用。
+
+官方新装脚本支持环境变量输入，并有 `use-ip` HTTP模式；本手册生产主线仍采用
+真实域名+HTTPS。官方占位域名 `netbird.example.com` 会被拒绝，复制后须替换。
+不要把新装脚本当作现有Compose的无损升级器。
+
+## 当前标签示例
+
+新装按官方生成结果确认组合服务端及Proxy；下面只是固定标签示例：
 
 ```yaml
 services:
   dashboard:
-    image: netbirdio/dashboard:v2.91.1
+    image: netbirdio/dashboard:v2.92.0
   netbird-server:
-    image: netbirdio/netbird-server:0.77.1
+    image: netbirdio/netbird-server:0.78.1
   routing-peer:
-    image: netbirdio/netbird:0.77.1
+    image: netbirdio/netbird:0.78.1
 ```
 
-Legacy 多容器部署仍可能使用独立 `management`、`signal`、`relay`，并包含
-Caddy、Coturn、PostgreSQL 和外部 IdP。只在确认当前环境就是该拓扑后更新这些
-独立镜像，不能拿 Legacy 清单新建环境。保留现有账户数据时，应先确认官方迁移
-工具是否支持当前身份架构；不支持时采用原地分阶段升级，不强行切换部署模型。
+目标平台的manifest、配置与兼容性检查方法见
+[上游维护流程](../maintenance/upstream-upgrade-workflow.md)。
 
-## 每月核对命令
+## 后续核对
 
 ```bash
 curl -fsSL https://api.github.com/repos/netbirdio/netbird/releases/latest \
@@ -106,22 +129,9 @@ curl -fsSL https://api.github.com/repos/netbirdio/dashboard/releases/latest \
 git ls-remote https://github.com/netbirdio/netbird.git HEAD refs/heads/main
 ```
 
-只有 `prerelease=false` 的 GitHub latest release 才能成为仓库默认基线。RC、nightly 和 `main` HEAD 只作为兼容观察项。
+只有各仓库 `releases/latest` 且 `prerelease=false` 才是稳定基线。Git远端查询
+失败时可用官方GitHub Git refs API核对，并记录替代路径；不能拿旧缓存当作新证据。
 
-## 版本更新清单
-
-1. 阅读 NetBird 和 Dashboard 跨版本 release notes。
-2. 核对官方升级、备份和部署模型迁移文档。
-3. 在隔离环境渲染 Compose：`docker compose config`。
-4. 确认 `docker compose config --images` 没有漂移标签。
-5. 备份配置、数据库和身份源数据，并校验备份可读性。
-6. 启用 Reverse Proxy 时，比较 Proxy 实际版本与 Management 当前版本。
-7. 先升级核心 NetBird 组件，观察日志和业务链路。
-8. 更新本页、README、部署说明、客户端和场景案例。
-9. 运行 `./scripts/validate-docs.sh` 后再提交。
-
-官方参考：
-
-- https://docs.netbird.io/selfhosted/maintenance/upgrade
-- https://docs.netbird.io/selfhosted/maintenance/backup
-- https://docs.netbird.io/selfhosted/migration/combined-container
+历史版本和已经完成的旧实测保留在 [CHANGELOG](../../CHANGELOG.md) 与
+[存量外部IdP升级手册](../operations/legacy-external-idp-upgrade.md)，不机械替换
+历史版本号。

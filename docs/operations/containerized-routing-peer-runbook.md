@@ -59,7 +59,7 @@ nftables / iptables。
 | 部署目录 | `/data/netbird-client` |
 | Compose 服务名 | `routing-peer` |
 | 容器名 | `netbird-routing-peer` |
-| 镜像 | `netbirdio/netbird:0.77.1` |
+| 镜像 | `netbirdio/netbird:0.78.1` |
 | Management URL | `https://netbird.example.com` |
 | Routing Peer Group | `cloud-a-routing-peers` |
 | 用户设备访问组 | `cloud-a-access` |
@@ -72,12 +72,17 @@ nftables / iptables。
 生产环境可以把同一版本镜像同步到内网仓库，例如：
 
 ```text
-registry.example.com/netbird/netbird:0.77.1
+registry.example.com/netbird/netbird:0.78.1
 ```
 
 无论使用公共仓库还是内网仓库，都要保留明确版本标签，并在变更记录中保存镜像 digest。
 
 ## 4. 上线前检查
+
+公网直连还须检查实际 WireGuard UDP 入口。下文 `51820:51820/udp` 只完成容器
+映射，不能替代云安全组和宿主机防火墙；TCP 大范围不会放行 UDP。以真实监听和
+ICE候选为准，先允许必要来源，验证P2P再扩大范围。无法直连时也须验证
+[QUIC/WS中继](relay-quic-runbook.md) 的真实业务路径。
 
 先确认目标服务器的真实状态，不要直接启动容器：
 
@@ -154,7 +159,7 @@ version: "2.4"
 
 services:
   routing-peer:
-    image: netbirdio/netbird:0.77.1
+    image: netbirdio/netbird:0.78.1
     container_name: netbird-routing-peer
     hostname: netbird-routing-peer
     restart: unless-stopped
@@ -224,7 +229,7 @@ networks:
 cd /data/netbird-client
 docker compose config
 docker compose pull
-docker image inspect netbirdio/netbird:0.77.1 \
+docker image inspect netbirdio/netbird:0.78.1 \
   --format 'id={{.Id}} digests={{json .RepoDigests}}'
 ```
 

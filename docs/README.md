@@ -28,6 +28,9 @@
   - `containerized-routing-peer-runbook.md`：云 VPC 容器化 Routing Peer、持久身份、Setup Key 清除、双云验收和回滚
   - `kubernetes-routing-peer-runbook.md`：集群内 Routing Peer、双节点身份、分阶段上线、Netstack 兼容、监控验证和局部隔离
   - `firewall-and-hardening.md`：阿里云安全组、端口与安全加固
+  - [relay-quic-runbook.md](operations/relay-quic-runbook.md)：直连与中继端口、TLS、Caddy UDP 端口归属、验证与回滚
+  - [relay-certificate-refresh.md](operations/relay-certificate-refresh.md)：文件证书续期校验、按指纹重载单个 Relay
+  - [remote-development-timeouts.md](operations/remote-development-timeouts.md)：TCP 建连与响应超时、定向包头、计数增量、多服务验收
   - `operations-playbook.md`：日常运维、备份、升级、回滚与排障 SOP
   - `monitoring-and-audit.md`：服务端、路由节点、客户端巡检、审计与告警建议
   - `disaster-recovery-drill.md`：备份恢复演练、跨主机恢复、DNS 切换和 RPO/RTO

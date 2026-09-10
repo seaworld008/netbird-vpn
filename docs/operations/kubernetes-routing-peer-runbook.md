@@ -86,11 +86,16 @@ NetBird IP。
 | Pod CIDR | `10.244.0.0/16` |
 | Service CIDR | `10.96.0.0/12` |
 | 路由节点 | `worker-a`、`worker-b` |
-| 固定客户端镜像 | `netbirdio/netbird:0.77.1` |
+| 固定客户端镜像 | `netbirdio/netbird:0.78.1` |
 
 复制时必须换成真实网段、节点名、端口和团队已验证的固定镜像版本。
 
 ## 5. 上线前只读检查
+
+WireGuard在Pod内的UDP监听（常见51820）不等于节点公网入口。只给节点安全组
+开放51820，不会自动把流量转发到该Pod。应核对Pod隔离、实际NAT映射和ICE候选，
+不得为了直连改成hostNetwork/hostPort或把高权限Peer铺到所有节点。需要中继时
+按 [QUIC手册](relay-quic-runbook.md) 检查传输，不混淆控制面与Pod数据面。
 
 ### 5.1 记录集群和网络基线
 
@@ -275,7 +280,7 @@ spec:
                       - "true"
       containers:
         - name: netbird
-          image: netbirdio/netbird:0.77.1
+          image: netbirdio/netbird:0.78.1
           imagePullPolicy: IfNotPresent
           env:
             - name: NODE_NAME
@@ -630,13 +635,13 @@ kubectl -n netbird-routing logs \
 核对镜像后再推送到私有仓库。能同时访问两个仓库时：
 
 ```bash
-docker pull netbirdio/netbird:0.77.1
-docker image inspect netbirdio/netbird:0.77.1 \
+docker pull netbirdio/netbird:0.78.1
+docker image inspect netbirdio/netbird:0.78.1 \
   --format '{{.Id}} {{json .RepoDigests}}'
-docker tag netbirdio/netbird:0.77.1 \
-  registry.example.com/netbird/netbird:0.77.1
-docker push registry.example.com/netbird/netbird:0.77.1
-docker image inspect registry.example.com/netbird/netbird:0.77.1 \
+docker tag netbirdio/netbird:0.78.1 \
+  registry.example.com/netbird/netbird:0.78.1
+docker push registry.example.com/netbird/netbird:0.78.1
+docker image inspect registry.example.com/netbird/netbird:0.78.1 \
   --format '{{.Id}} {{json .RepoDigests}}'
 ```
 
@@ -659,7 +664,7 @@ kubectl -n netbird-routing patch daemonset netbird-k8s-routing-peer \
   --type merge \
   -p '{"spec":{"updateStrategy":{"type":"OnDelete","rollingUpdate":null}}}'
 kubectl -n netbird-routing set image daemonset/netbird-k8s-routing-peer \
-  netbird=registry.example.com/netbird/netbird:0.77.1
+  netbird=registry.example.com/netbird/netbird:0.78.1
 
 kubectl -n netbird-routing delete pod "$PEER_POD_ON_WORKER_A"
 ```
