@@ -10,6 +10,8 @@
 | 修改 Compose 域名、端口、镜像 | [配置速查](../../../../docs/selfhosted/docker-compose-config-cheatsheet.md) | [运维 Playbook](../../../../docs/operations/operations-playbook.md) |
 | 升级现代部署 | [上游版本状态](../../../../docs/selfhosted/upstream-version-status.md)、[升级流程](../../../../docs/maintenance/upstream-upgrade-workflow.md) | [灾备演练](../../../../docs/operations/disaster-recovery-drill.md) |
 | 升级 Legacy 外部 IdP | [Legacy 升级 Runbook](../../../../docs/operations/legacy-external-idp-upgrade.md) | [ADR-002](../../../../docs/decisions/ADR-002-pinned-images-and-routing-peer-isolation.md) |
+| Relay QUIC、WS、证书续期 | [QUIC Runbook](../../../../docs/operations/relay-quic-runbook.md) | [证书重载](../../../../docs/operations/relay-certificate-refresh.md)、[端口边界](../../../../docs/operations/firewall-and-hardening.md) |
+| Redis/MQ/Nacos 等间歇超时 | [分层排障](../../../../docs/operations/remote-development-timeouts.md) | TCP/应用响应分离、命名空间计数、定向包头与多来源对照 |
 
 稳定版本必须在执行时查询 GitHub `releases/latest`，并确认 `prerelease=false`；RC 只观察。服务端主线始终是官方 `getting-started.sh` 生成结果 + Docker Compose，不自行维护替代安装脚本。
 

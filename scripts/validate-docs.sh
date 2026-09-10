@@ -267,6 +267,8 @@ import sys
 stale = re.compile(
     r"v0\.71\.4|v0\.73\.2|v2\.90\.9|v0\.76\.3|v2\.90\.10|v0\.77\.0|"
     r"netbirdio/(?:netbird|netbird-server|management|signal|relay):0\.77\.0|"
+    r"netbirdio/(?:netbird|netbird-server|management|signal|relay):0\.77\.1|"
+    r"netbird_installer_0\.77\.1|"
     r"netbird_installer_0\.77\.0|2026-06-05|2026-07-01|512899d82|0358be2|"
     r"4e5b63249032|how-to/networks|how-to/resolve-overlapping-routes|"
     r"use-cases/setup-site-to-site-access|use-cases/cloud/routing-peers-and-kubernetes|"
@@ -307,19 +309,24 @@ required_baselines = [
     Path("docs/selfhosted/docker-compose-config-cheatsheet.md"),
 ]
 for file in required_baselines:
-    if not re.search(r"v?0\.77\.1", file.read_text(encoding="utf-8")):
-        bad.append(f"{file}: current NetBird v0.77.1 baseline missing")
+    if not re.search(r"v?0\.78\.1", file.read_text(encoding="utf-8")):
+        bad.append(f"{file}: current NetBird v0.78.1 baseline missing")
 
 status_file = Path("docs/selfhosted/upstream-version-status.md")
 status_text = status_file.read_text(encoding="utf-8")
 required_status_lines = [
-    "| NetBird Server / Client | `v0.77.1` | 2026-08-21 | GitHub `releases/latest`，`prerelease=false` |",
-    "| NetBird Dashboard | `v2.91.1` | 2026-08-14 | Dashboard GitHub `releases/latest`，`prerelease=false` |",
-    "NetBird `v0.77.1` peeled commit：`79a06720b684768b421f0a54f3bb14f22704994f`",
+    "| NetBird Server / Client | `v0.78.1` | 2026-09-04 | GitHub `releases/latest`，`prerelease=false` |",
+    "| NetBird Dashboard | `v2.92.0` | 2026-09-03 | Dashboard GitHub `releases/latest`，`prerelease=false` |",
+    "NetBird `v0.78.1` peeled commit：`23a1487c26c5f00353c046bc818069189650dbfb`",
 ]
 for expected in required_status_lines:
     if expected not in status_text:
         bad.append(f"{status_file}: current stable status evidence is missing: {expected}")
+
+msi_digest = "91fdc2bc4ecd45e0a3773ac06587edb023d64f138dadcc1bb672d14de842cbc5"
+for file in (status_file, Path("docs/cases/12-client-platform-onboarding.md")):
+    if msi_digest not in file.read_text(encoding="utf-8"):
+        bad.append(f"{file}: current Windows MSI asset digest missing")
 
 if bad:
     print("\n".join(bad), file=sys.stderr)
@@ -327,6 +334,28 @@ if bad:
 PY
 
 echo "==> Checking production image tags"
+python - <<'PY'
+from pathlib import Path
+import re
+import sys
+
+for name in (
+    "README.md", "部署说明.md", "docs/selfhosted/quickstart-modern.md",
+    "docs/selfhosted/docker-compose-config-cheatsheet.md",
+    "docs/operations/firewall-and-hardening.md",
+):
+    text = Path(name).read_text(encoding="utf-8")
+    missing = [term for term in ("51820", "WireGuard", "UDP", "QUIC", "HTTP/3") if term not in text]
+    if missing:
+        sys.exit(f"{name}: missing transport boundary terms: {missing}")
+
+for name in ("relay-certificate-refresh.md", "remote-development-timeouts.md"):
+    path = Path("docs/operations") / name
+    text = path.read_text(encoding="utf-8")
+    for block in re.findall(r"^```python\s*\n(.*?)^```\s*$", text, re.MULTILINE | re.DOTALL):
+        compile(block, str(path), "exec")
+PY
+
 python - <<'PY'
 from pathlib import Path
 import re
@@ -399,7 +428,7 @@ image_self_tests = {
     "netbirdio/reverse-proxy:${NETBIRD_TAG:-latest}": "defaults to a drifting tag",
     "netbirdio/netbird:${NETBIRD_TAG:-main}": "defaults to a drifting tag",
     "netbirdio/netbird:main": "uses a drifting tag",
-    "netbirdio/netbird:0.77.1": None,
+    "netbirdio/netbird:0.78.1": None,
     "netbirdio/netbird@sha256:" + "0" * 64: None,
 }
 for sample, expected in image_self_tests.items():

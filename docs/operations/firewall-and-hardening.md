@@ -7,6 +7,7 @@ TCP 80   (HTTP/ACME)
 TCP 443  (HTTPS/gRPC 与 Relay WebSocket)
 UDP 3478 (现代部署的 STUN)
 UDP 443  (Relay QUIC；仅在部署明确发布并通告该端点时开放)
+UDP 51820 (Routing Peer 常见 WireGuard 直连端口，以实际监听/映射为准)
 ```
 
 端口作用说明：
@@ -14,11 +15,22 @@ UDP 443  (Relay QUIC；仅在部署明确发布并通告该端点时开放)
 - `80/tcp`：给 Let's Encrypt 或反向代理做证书申请、HTTP 跳转。
 - `443/tcp`：Dashboard、Management API/gRPC、Signal 和 Relay WebSocket 的
   共享入口。WebSocket Relay 也是 QUIC 不通时的 TCP 回退路径。
-- `3478/udp`：现代 quickstart 中由原生 Relay 的嵌入式 STUN 提供，用来发现
-  NAT 映射并提高直连概率。
+- `3478/udp`：STUN 用来发现 NAT 映射。现代组合服务端可提供嵌入式 STUN，
+  存量部署可能由 Coturn 提供；它不等于 WireGuard 数据入口。
 - `443/udp`：原生 Relay 的 QUIC 传输。只有 Compose、负载均衡和 Relay 公告
   地址都明确使用 UDP 443 时才开放；官方脚本生成结果没有发布该端口时，不要只
   改安全组假装启用了 QUIC。
+- `51820/udp`：公网 Routing Peer 常见的 WireGuard 监听；以 `netbird status`
+  的 `Wireguard port`、`ss -lun` 和容器映射为准。动态客户端端口、端口冲突或
+  多实例可能使用其他端口。规则应配置在真正承载该 Peer 的节点，而不是看到
+  “NetBird 服务端”就一律开放。
+
+**TCP 与 UDP 是不同规则。** `TCP 49152–65535` 即使包含数字 51820，也不会
+放行 `UDP 51820`。已有 TCP 443 也不能替代 QUIC 的 UDP 443。
+
+同一公网 IP 的 UDP 443 不能同时交给普通 Caddy HTTP/3 和独立 Relay QUIC。
+必须明确端口归属、TLS 终止位置，并保持 WebSocket 回退。实现见
+[Relay QUIC 运维手册](relay-quic-runbook.md)。
 
 NetBird 客户端会并行尝试原生 Relay 的 QUIC 与 WebSocket。`443/udp` 被阻断时
 可以回退到 `443/tcp` 的 WebSocket Relay，但延迟和吞吐可能变化；如果所有 UDP
@@ -92,6 +104,7 @@ Peer 连接。
 | 入方向 | 1 | TCP | 443/443 | `0.0.0.0/0` | HTTPS/gRPC、Relay WebSocket |
 | 入方向 | 1 | UDP | 3478/3478 | `0.0.0.0/0` | NetBird STUN |
 | 入方向 | 1 | UDP | 443/443 | `0.0.0.0/0` | 条件项：Relay QUIC |
+| 入方向 | 1 | UDP | 51820/51820（示例） | 按实际来源规划 | 公网 Routing Peer 的 WireGuard 直连入口 |
 
 填写说明：
 
@@ -113,7 +126,8 @@ Peer 连接。
 
 ## 五、路由节点安全组怎么开
 
-路由节点不是 NetBird 服务端，它通常放在办公室、VPC、K8S 同网段或多云内网里。
+路由节点负责数据转发，通常放在办公室、VPC、K8S 或多云内网；它可以与控制面
+共用一台宿主机，但必须分别确认容器、监听和流量路径。
 
 最小原则：
 
@@ -122,6 +136,9 @@ Peer 连接。
 - 如果已通告 QUIC Relay，允许访问对应端点的 `443/udp`；阻断时确认客户端确实
   回退到 WebSocket，而不是把 `Connected` 当成数据面验证。
 - 路由节点到目标资源的业务端口必须放通。
+- 有公网可达入口且需要直连时，允许该节点实际 WireGuard UDP 端口；容器使用
+  bridge 时还必须有正确的 UDP 映射。来源固定则收窄来源；移动人员来源不固定时，
+  按组织策略决定公网可达范围，仍由 WireGuard 身份和 NetBird Policy 控制业务访问。
 - 不要把路由节点 SSH 直接开给公网。
 
 示例：办公室路由节点 `10.20.0.10` 要访问 GitLab、Jenkins、MySQL：
@@ -176,7 +193,9 @@ curl -k -I https://10.20.10.20
 nc -vz 10.20.20.10 22
 ```
 
-如果路由节点能访问目标，但客户端不能访问目标，优先检查 NetBird 的资源组和访问策略。
+如果路由节点能访问目标但客户端异常，继续区分策略、转发与中继外层链路。一次
+直连成功不能排除间歇故障；对照真实协议、同时段计数和定点包头，见
+[远程开发超时排查](remote-development-timeouts.md)。
 
 ## 七、官方参考
 

@@ -278,3 +278,18 @@ netbird status
 - Setup Keys：https://docs.netbird.io/manage/peers/register-machines-using-setup-keys
 - Public API：https://docs.netbird.io/manage/public-api
 - Security Use Cases：https://docs.netbird.io/use-cases/security
+
+## 远程开发链路的新增检查项
+
+参见 [间歇超时排查](remote-development-timeouts.md) 和
+[QUIC 运维手册](relay-quic-runbook.md)。巡检同时记录：
+
+- Routing Peer 实际 WireGuard UDP 端口、云安全组协议及入站映射。
+- Peer 的 P2P/Relayed 与 Relay 的 quic/ws，不能用二者互相代替。
+- TCP 建连、AUTH/应用响应、长连接 PING 的独立延迟分位数及超时数。
+- 在拥有 TCP socket 的网络命名空间读取重传、拥塞窗口和队列；对比同一窗口增量。
+- 旧内核的 tcp_tw_recycle 与 PAWSPassive/ListenDrops；没有证据不统一调参。
+- 证书更新任务的最近成功状态、源证书与实际服务证书指纹，以及所有相关容器的重启次数。
+
+十分钟平均 CPU 和带宽正常不能排除秒级突发；不要把累计丢包、仅一次端口成功、
+QUIC Available 或 HTTP 101 单独当成稳定数据面的证明。

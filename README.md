@@ -1,6 +1,6 @@
 # NetBird 自建部署与实践手册
 
-[![NetBird](https://img.shields.io/badge/NetBird-v0.77.1-00A3FF?logo=wireguard&logoColor=white)](https://github.com/netbirdio/netbird/releases/tag/v0.77.1)
+[![NetBird](https://img.shields.io/badge/NetBird-v0.78.1-00A3FF?logo=wireguard&logoColor=white)](https://github.com/netbirdio/netbird/releases/tag/v0.78.1)
 [![中文文档](https://img.shields.io/badge/docs-%E4%B8%AD%E6%96%87%E5%AE%9E%E8%B7%B5%E6%89%8B%E5%86%8C-brightgreen)](docs/README.md)
 [![Self Hosted](https://img.shields.io/badge/self--hosted-Docker%20Compose-2496ED?logo=docker&logoColor=white)](docs/selfhosted/quickstart-modern.md)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-ready-326CE5?logo=kubernetes&logoColor=white)](docs/cases/03-kubernetes-connectivity.md)
@@ -23,7 +23,7 @@
 - 服务端部署方式统一按 `docker-compose`
 - 文档重点放在“配置说明 + 场景落地 + 运维说明”
 - 场景文档按“原理、配置、验证、排障、回滚、扩展”组织，尽量让新手复制示例后能跑通
-- 最近一次上游版本核对：2026-08-23，官方最新稳定版为 NetBird `v0.77.1`、Dashboard `v2.91.1`
+- 最近一次上游版本核对：2026-09-10，官方最新稳定版为 NetBird `v0.78.1`、Dashboard `v2.92.0`
 
 ## 适合谁
 
@@ -80,6 +80,8 @@
 ### 运维
 
 - [阿里云安全组与端口说明](docs/operations/firewall-and-hardening.md)
+- [Relay QUIC 与 WebSocket 配置、证书续期](docs/operations/relay-quic-runbook.md)
+- [远程开发间歇超时的分层排查与验收](docs/operations/remote-development-timeouts.md)
 - [日常运维与故障排查](docs/operations/operations-playbook.md)
 - [云 VPC 容器化 Routing Peer 运维手册](docs/operations/containerized-routing-peer-runbook.md)
 - [Kubernetes 集群内 Routing Peer 生产运维手册](docs/operations/kubernetes-routing-peer-runbook.md)
@@ -109,14 +111,14 @@ NetBird 自建主线部署必须使用公网域名。
 要求：
 
 - 域名必须能解析到你的服务器公网 IP
-- 官方自建 Quickstart 以域名为前提，不适合“只有公网 IP、没有域名”的场景
+- 本手册生产主线采用域名和 HTTPS；官方脚本另有 `use-ip` 的 HTTP 模式，不能将其当作本文的可信 TLS 部署路径
 - 如果你在中国大陆面向公网使用，建议使用已备案域名，否则 HTTPS 证书签发和访问链路可能失败
 
 ```bash
 export NETBIRD_DOMAIN=netbird.example.com
 ```
 
-`netbird.example.com` 只是文档保留域名。`v0.77.1` 官方脚本会主动拒绝这个原样
+`netbird.example.com` 只是文档保留域名。`v0.78.1` 官方脚本会主动拒绝这个原样
 占位符；继续前必须把它替换成已解析到服务器的真实 FQDN。
 
 ### 2. 执行官方脚本
@@ -125,7 +127,7 @@ export NETBIRD_DOMAIN=netbird.example.com
 curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting-started.sh | bash
 ```
 
-本仓库最近核对到的官方最新稳定版是 NetBird `v0.77.1`，Dashboard `v2.91.1`。首次安装脚本仍以 `releases/latest` 为入口；生产 Compose 中的镜像必须固定到经过验证的明确标签，见 [NetBird 上游版本状态](docs/selfhosted/upstream-version-status.md)。
+本仓库最近核对到的官方最新稳定版是 NetBird `v0.78.1`，Dashboard `v2.92.0`。首次安装脚本仍以 `releases/latest` 为入口；生产 Compose 中的镜像必须固定到经过验证的明确标签，见 [NetBird 上游版本状态](docs/selfhosted/upstream-version-status.md)。
 
 ### 3. 首次打开管理界面
 
@@ -162,7 +164,8 @@ NetBird 主线部署里，最常用的对外端口如下：
 | TCP | 80 | HTTP、证书申请、跳转 |
 | TCP | 443 | Dashboard、管理入口、Relay WebSocket、Web 登录 |
 | UDP | 3478 | STUN，用于 NAT 探测和协商连接 |
-| UDP | 443 | 可选，用于 Relay QUIC 或 HTTP/3；受阻时新版客户端的 Relay 可回退 TCP/443 |
+| UDP | 443 | 条件项：原生 Relay QUIC；必须由 Relay 的 QUIC 监听接收，Caddy HTTP/3 不是等价替代 |
+| UDP | 51820（以实际监听为准） | Routing Peer 的 WireGuard 直连入口；开在实际路由节点，不是所有控制面主机 |
 
 如果你是第一次部署，至少先确保：
 
@@ -171,6 +174,11 @@ NetBird 主线部署里，最常用的对外端口如下：
 - `3478/udp`
 
 这三条已放通。
+
+如果要通过有公网入口的 Routing Peer 稳定访问内网，还应核对其实际 WireGuard
+监听端口（常见为 `51820/udp`）、容器映射、宿主机防火墙与云安全组。`TCP
+49152–65535` 不会放行 `UDP 51820`。仅显示 `Connected` 不能证明已走直连；
+用 `netbird status -d` 检查 `P2P` / `Relayed` 和 Relay 的 `via quic` / `via ws`。
 
 ## 五、阿里云安全组怎么开
 
@@ -181,12 +189,15 @@ NetBird 主线部署里，最常用的对外端口如下：
 | 入方向 | TCP | 80/80 | `0.0.0.0/0` | 证书申请、HTTP 跳转 |
 | 入方向 | TCP | 443/443 | `0.0.0.0/0` | Dashboard、HTTPS 管理入口和 Relay WebSocket |
 | 入方向 | UDP | 3478/3478 | `0.0.0.0/0` | STUN |
-| 入方向 | UDP | 443/443 | `0.0.0.0/0` | 可选，Relay QUIC 或 HTTP/3 |
+| 入方向 | UDP | 443/443 | `0.0.0.0/0` | 条件项：已启用并正确映射的 Relay QUIC |
+| 入方向 | UDP | 51820/51820（示例） | 按客户端来源规划 | Routing Peer 实际 WireGuard 监听；仅加在承载该 Peer 的节点 |
 
 新手最容易漏掉的是：
 
 - 只开了 `443/tcp`，没开 `3478/udp`
 - 域名解析好了，但 `80/tcp` 没开，导致证书失败
+- 把 TCP 大端口范围误认为也允许 UDP，漏放 Routing Peer 的直连端口
+- 放行 UDP 443 后仍由 HTTP/3 接收，Relay 没有 TLS/QUIC 监听
 
 更详细的填写说明见：
 
@@ -254,6 +265,9 @@ NetBird 主线部署里，最常用的对外端口如下：
     │   ├── firewall-and-hardening.md
     │   ├── operations-playbook.md
     │   ├── monitoring-and-audit.md
+    │   ├── relay-quic-runbook.md
+    │   ├── relay-certificate-refresh.md
+    │   ├── remote-development-timeouts.md
     │   ├── disaster-recovery-drill.md
     │   └── legacy-external-idp-upgrade.md
     ├── maintenance/

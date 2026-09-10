@@ -70,7 +70,7 @@ IP 和 Domain Resource 使用两个独立 Network。这样可以独立检查路�
 | IP 资源 | `198.51.100.28/32` | 文档保留地址 |
 | Domain 资源 | `*.private.example.com` | 不包含根域名 |
 | 允许端口 | TCP `80,443,30004-30006` | 按真实业务收窄 |
-| NetBird 镜像 | `netbirdio/netbird:0.77.1` | 使用团队验证的固定标签 |
+| NetBird 镜像 | `netbirdio/netbird:0.78.1` | 使用团队验证的固定标签 |
 
 ## 5. 上线前只读基线
 
@@ -195,7 +195,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: netbird
-          image: netbirdio/netbird:0.77.1
+          image: netbirdio/netbird:0.78.1
           imagePullPolicy: IfNotPresent
           env:
             - name: NB_HOSTNAME

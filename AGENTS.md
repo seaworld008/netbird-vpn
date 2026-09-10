@@ -70,6 +70,9 @@
     │   ├── firewall-and-hardening.md
     │   ├── operations-playbook.md
     │   ├── monitoring-and-audit.md
+    │   ├── relay-quic-runbook.md
+    │   ├── relay-certificate-refresh.md
+    │   ├── remote-development-timeouts.md
     │   ├── disaster-recovery-drill.md
     │   └── legacy-external-idp-upgrade.md
     ├── maintenance/
@@ -177,6 +180,12 @@ cp docs/templates/case-template.md docs/cases/NN-your-case.md
 - 不要把数据库、SSH、Web 混在一个大资源组。
 - 不要忽略非授权用户验证。
 - 不要只写 `ping` 作为验证，很多策略没有放 ICMP。
+- TCP 大端口范围不会放行 UDP；按实际 Routing Peer 的 WireGuard 监听核对
+  UDP 直连入口，常见端口为 51820，而非所有控制面主机都需要该端口。
+- QUIC 必须确认 Relay 的 TLS/UDP 监听与映射；反向代理 HTTP/3 占用 UDP443
+  不等于 NetBird QUIC。文件证书更新需要确认进程实际加载了新证书。
+- 间歇超时按同一时间窗区分 TCP 建连、应用响应及中继外层重传；在拥有 socket
+  的网络命名空间比较计数增量，不用累计值或当前一次成功归因历史故障。
 
 ## 8. Kubernetes Routing Peer 操作红线
 
