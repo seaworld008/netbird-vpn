@@ -1,6 +1,10 @@
 # 远程开发间歇超时：分层排查、整改与验收
 
 ## 1. 先定义问题
+### macOS 客户端显示 Connected 但 RDP 不通
+
+如果 Mac 能 ping 到 Windows 的 NetBird 地址，但 TCP 3389 超时或 RDP 无法建立，先记录 `netbird status -d` 中目标 Peer 的 Last WireGuard handshake 和收发计数。若状态长时间不更新而执行一次断开/连接后立即恢复，这是客户端数据面会话未自动重建的强信号，不能仅凭 Dashboard 的 Connected 判定链路健康。优先升级到当前稳定版本，并保留升级前后的客户端日志；临时恢复可重连 NetBird，随后继续验证 TCP 3389。
+
 
 同一开发机经 NetBird 访问 Redis、RocketMQ、Nacos 时，记录来源 Peer、实际隧道
 接口、目标 IP/端口、超时阈值和带时区的时间。将错误分成两类：
