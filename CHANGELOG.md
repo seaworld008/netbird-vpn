@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- 稳定基线更新至 NetBird `v0.78.1`、Dashboard `v2.92.0`，补充官方制品与五个在用 Routing Peer 的分阶段升级证据
+- 稳定基线更新至 NetBird `v0.78.2`、Dashboard `v2.92.0`，补充官方制品与五个在用 Routing Peer 的分阶段升级证据
 - README、部署说明及安全组文档明确 TCP/UDP 独立规则、Routing Peer 实际 WireGuard 直连端口与 Relay/HTTP3 端口归属
 - 新增独立 Relay QUIC + Caddy 运维手册和文件证书续期校验/单服务重载示例，保留 WebSocket 回退与局部回滚
 - 新增远程开发超时分层诊断：TCP/应用响应分离、定向包头、命名空间内计数增量、旧内核 PAWS 与共同中继链路排查

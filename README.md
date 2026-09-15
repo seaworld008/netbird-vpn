@@ -1,6 +1,6 @@
 # NetBird 自建部署与实践手册
 
-[![NetBird](https://img.shields.io/badge/NetBird-v0.78.1-00A3FF?logo=wireguard&logoColor=white)](https://github.com/netbirdio/netbird/releases/tag/v0.78.1)
+[![NetBird](https://img.shields.io/badge/NetBird-v0.78.2-00A3FF?logo=wireguard&logoColor=white)](https://github.com/netbirdio/netbird/releases/tag/v0.78.2)
 [![中文文档](https://img.shields.io/badge/docs-%E4%B8%AD%E6%96%87%E5%AE%9E%E8%B7%B5%E6%89%8B%E5%86%8C-brightgreen)](docs/README.md)
 [![Self Hosted](https://img.shields.io/badge/self--hosted-Docker%20Compose-2496ED?logo=docker&logoColor=white)](docs/selfhosted/quickstart-modern.md)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-ready-326CE5?logo=kubernetes&logoColor=white)](docs/cases/03-kubernetes-connectivity.md)
@@ -23,7 +23,7 @@
 - 服务端部署方式统一按 `docker-compose`
 - 文档重点放在“配置说明 + 场景落地 + 运维说明”
 - 场景文档按“原理、配置、验证、排障、回滚、扩展”组织，尽量让新手复制示例后能跑通
-- 最近一次上游版本核对：2026-09-10，官方最新稳定版为 NetBird `v0.78.1`、Dashboard `v2.92.0`
+- 最近一次上游版本核对：2026-09-15，官方最新稳定版为 NetBird `v0.78.2`、Dashboard `v2.92.0`
 
 ## 适合谁
 
@@ -118,7 +118,7 @@ NetBird 自建主线部署必须使用公网域名。
 export NETBIRD_DOMAIN=netbird.example.com
 ```
 
-`netbird.example.com` 只是文档保留域名。`v0.78.1` 官方脚本会主动拒绝这个原样
+`netbird.example.com` 只是文档保留域名。`v0.78.2` 官方脚本会主动拒绝这个原样
 占位符；继续前必须把它替换成已解析到服务器的真实 FQDN。
 
 ### 2. 执行官方脚本
@@ -127,7 +127,7 @@ export NETBIRD_DOMAIN=netbird.example.com
 curl -fsSL https://github.com/netbirdio/netbird/releases/latest/download/getting-started.sh | bash
 ```
 
-本仓库最近核对到的官方最新稳定版是 NetBird `v0.78.1`，Dashboard `v2.92.0`。首次安装脚本仍以 `releases/latest` 为入口；生产 Compose 中的镜像必须固定到经过验证的明确标签，见 [NetBird 上游版本状态](docs/selfhosted/upstream-version-status.md)。
+本仓库最近核对到的官方最新稳定版是 NetBird `v0.78.2`，Dashboard `v2.92.0`。首次安装脚本仍以 `releases/latest` 为入口；生产 Compose 中的镜像必须固定到经过验证的明确标签，见 [NetBird 上游版本状态](docs/selfhosted/upstream-version-status.md)。
 
 ### 3. 首次打开管理界面
 

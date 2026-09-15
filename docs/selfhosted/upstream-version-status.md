@@ -1,15 +1,15 @@
 # NetBird 上游版本状态
 
-> 最近核对时间：2026-09-10。发布时间按上游 UTC 日期记录。
+> 最近核对时间：2026-09-15。发布时间按上游 UTC 日期记录。
 
 ## 当前稳定基线
 
 | 组件 | 稳定版本 | 发布时间 | 核对依据 |
 | --- | --- | --- | --- |
-| NetBird Server / Client | `v0.78.1` | 2026-09-04 | GitHub `releases/latest`，`prerelease=false` |
+| NetBird Server / Client | `v0.78.2` | 2026-09-14 | GitHub `releases/latest`，`prerelease=false` |
 | NetBird Dashboard | `v2.92.0` | 2026-09-03 | Dashboard GitHub `releases/latest`，`prerelease=false` |
 
-- [NetBird release](https://github.com/netbirdio/netbird/releases/tag/v0.78.1)
+- [NetBird release](https://github.com/netbirdio/netbird/releases/tag/v0.78.1)`r`n- [NetBird v0.78.2 release](https://github.com/netbirdio/netbird/releases/tag/v0.78.2)（当前稳定版本；本仓库尚未完成生产升级验收）
 - [跨版本变更](https://github.com/netbirdio/netbird/compare/v0.77.1...v0.78.1)
 - [Dashboard release](https://github.com/netbirdio/dashboard/releases/tag/v2.92.0)
 - NetBird `v0.78.1` peeled commit：`23a1487c26c5f00353c046bc818069189650dbfb`
