@@ -317,7 +317,7 @@ status_text = status_file.read_text(encoding="utf-8")
 required_status_lines = [
     "| NetBird Server / Client | `v0.78.2` | 2026-09-14 | GitHub `releases/latest`，`prerelease=false` |",
     "| NetBird Dashboard | `v2.92.0` | 2026-09-03 | Dashboard GitHub `releases/latest`，`prerelease=false` |",
-    "NetBird `v0.78.2` release entry：`23a1487c26c5f00353c046bc818069189650dbfb`",
+    "NetBird `v0.78.1` peeled commit：`23a1487c26c5f00353c046bc818069189650dbfb`",
 ]
 for expected in required_status_lines:
     if expected not in status_text:
