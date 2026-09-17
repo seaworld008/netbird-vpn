@@ -309,7 +309,7 @@ required_baselines = [
     Path("docs/selfhosted/docker-compose-config-cheatsheet.md"),
 ]
 for file in required_baselines:
-    if not re.search(r"v?0\.78\.1", file.read_text(encoding="utf-8")):
+    if not re.search(r"v?0\.78\.2", file.read_text(encoding="utf-8")):
         bad.append(f"{file}: current NetBird v0.78.2 baseline missing")
 
 status_file = Path("docs/selfhosted/upstream-version-status.md")
@@ -428,7 +428,7 @@ image_self_tests = {
     "netbirdio/reverse-proxy:${NETBIRD_TAG:-latest}": "defaults to a drifting tag",
     "netbirdio/netbird:${NETBIRD_TAG:-main}": "defaults to a drifting tag",
     "netbirdio/netbird:main": "uses a drifting tag",
-    "netbirdio/netbird:0.78.1": None,
+    "netbirdio/netbird:0.78.2": None,
     "netbirdio/netbird@sha256:" + "0" * 64: None,
 }
 for sample, expected in image_self_tests.items():

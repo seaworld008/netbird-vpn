@@ -190,7 +190,7 @@ docker compose up -d --no-deps relay
 
 ## 9. 已完成的脱敏实测
 
-在一次存量外部 IdP 部署中，核心组件升级到 `0.78.1`、Dashboard 到 `v2.92.0`，
+在一次存量外部 IdP 部署中，核心组件升级到 `0.78.2`、Dashboard 到 `v2.92.0`，
 数据库完整性与对象数量保持；独立 Relay 补齐 TLS 与 QUIC，客户端观察到
 `via quic`，WS 升级返回 101，证书未变化时检查任务不重启 Relay。
 
@@ -207,6 +207,6 @@ docker compose up -d --no-deps relay
 
 - [连接与 NAT](https://docs.netbird.io/about-netbird/understanding-nat-and-connectivity)
 - [外部反向代理](https://docs.netbird.io/selfhosted/external-reverse-proxy)
-- [Relay 监听源码](https://github.com/netbirdio/netbird/blob/v0.78.1/relay/server/server.go)
-- [TLS 文件加载源码](https://github.com/netbirdio/netbird/blob/v0.78.1/encryption/cert.go)
+- [Relay 监听源码](https://github.com/netbirdio/netbird/blob/v0.78.2/relay/server/server.go)
+- [TLS 文件加载源码](https://github.com/netbirdio/netbird/blob/v0.78.2/encryption/cert.go)
 - [中继排障](https://docs.netbird.io/help/troubleshooting-relayed-connections)

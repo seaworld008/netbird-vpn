@@ -1,6 +1,6 @@
 # NetBird 上游版本状态
 
-> 最近核对时间：2026-09-15。发布时间按上游 UTC 日期记录。
+> 最近核对时间：2026-09-18。发布时间按上游 UTC 日期记录。
 
 ## 当前稳定基线
 
@@ -9,8 +9,8 @@
 | NetBird Server / Client | `v0.78.2` | 2026-09-14 | GitHub `releases/latest`，`prerelease=false` |
 | NetBird Dashboard | `v2.92.0` | 2026-09-03 | Dashboard GitHub `releases/latest`，`prerelease=false` |
 
-- [NetBird release](https://github.com/netbirdio/netbird/releases/tag/v0.78.1)`r`n- [NetBird v0.78.2 release](https://github.com/netbirdio/netbird/releases/tag/v0.78.2)（当前稳定版本；本仓库尚未完成生产升级验收）
-- [跨版本变更](https://github.com/netbirdio/netbird/compare/v0.77.1...v0.78.1)
+- [NetBird v0.78.2 release](https://github.com/netbirdio/netbird/releases/tag/v0.78.2)（当前稳定版本，已完成存量生产升级验收）
+- [跨版本变更](https://github.com/netbirdio/netbird/compare/v0.78.1...v0.78.2)
 - [Dashboard release](https://github.com/netbirdio/dashboard/releases/tag/v2.92.0)
 - NetBird `v0.78.1` peeled commit：`23a1487c26c5f00353c046bc818069189650dbfb`
 - 核对时 `main` HEAD：`9615d2ab162e7badee5c8b4e84048ce49e1db6e7`，仅为观察值，不作为部署目标。
@@ -38,19 +38,19 @@ Windows amd64 MSI 的官方 asset digest 为：
 
 | 镜像 | 官方 RepoDigest 的 SHA256 |
 | --- | --- |
-| `netbirdio/management:0.78.1` | `e114d2c8e699da19a05678c0600b821c59587541c404ac550cc062b96c3d3f54` |
-| `netbirdio/signal:0.78.1` | `ebc42056ce135b5163554fad47c5b1456673e7132dc4fad9f9cc34d84c70feb4` |
-| `netbirdio/relay:0.78.1` | `d5df6e3fe802734164fbe81d814d4575d7c29b29f9e03c95b49f18c10efd7958` |
-| `netbirdio/netbird:0.78.1` | `c0b492f320e1251ac0655e785fa288e935a0b7b16365d14fdcbc8bf75dc5b0a0` |
+| `netbirdio/management:0.78.2` | `66a008a3a865cd5ed3f79261bf97b67e7b9be6462ee190d33a9a9eaca3924fad` |
+| `netbirdio/signal:0.78.2` | `8b06ac050d87e7e2f782e806e2adb8b58bbc17d484c590cb111cedeaa0b9d634` |
+| `netbirdio/relay:0.78.2` | `a845ba99641778b8e58df5abe5871ad374573f8b51c504691a5d7f406f477e93` |
+| `netbirdio/netbird:0.78.2` | `0d6653f21f0417b6014e4c621c75e898e06698e1cce973398d1c3c45a30f6bd6` |
 | `netbirdio/dashboard:v2.92.0` | `fa2d8b02a81761e4d2a22df4041d13316b7635f1e93273eafeb53d4991e55b5a` |
 
-另通过官方 OCI Registry 核对组合容器与 Proxy 的 `0.78.1` manifest，均包含
+另通过官方 OCI Registry 核对组合容器与 Proxy 的 `0.78.2` manifest，均包含
 Linux amd64/arm64/arm；这是制品可用性检查，不是现场部署验收：
 
 | 镜像 | manifest SHA256 |
 | --- | --- |
-| `netbirdio/netbird-server:0.78.1` | `3086534361a18573b85897383a0753a97b8c75d68dee9926fbd7eccab1f2fe89` |
-| `netbirdio/reverse-proxy:0.78.1` | `d79cf51926c9d4640370c17b13904441f23e2dbb22cd67ff5a453f1cf7bd28b9` |
+| `netbirdio/netbird-server:0.78.2` | 待组合容器实测 |
+| `netbirdio/reverse-proxy:0.78.2` | 待组合容器实测 |
 
 部分节点无法直连镜像仓库时，导入已校验归档，导入后的客户端image ID与可信
 下载主机一致。固定官方标签与 `IfNotPresent` 允许现有节点复用缓存；新增或
@@ -58,9 +58,13 @@ Linux amd64/arm64/arm；这是制品可用性检查，不是现场部署验收�
 
 ## 本轮真实部署与验收
 
-- 外部IdP存量部署：Management/Signal/Relay从 `0.77.0` 升级到 `0.78.1`，
-  Dashboard从 `v2.91.1` 到 `v2.92.0`；配置、SQLite在线备份、完整性与对象数量
-  已核验，身份源数据库已备份。未升级IdP、PostgreSQL或Coturn。
+- 外部IdP存量部署：Management/Signal/Relay 已升级到 `0.78.2`，Routing Peer
+  同步到 `0.78.2`，Dashboard 保持 `v2.92.0`；配置、SQLite在线备份、完整性与
+  对象数量已核验，身份源数据库已备份。Zitadel/PostgreSQL 保持现状，Coturn
+  已升级到官方最新稳定 `4.18.0-r0`，Caddy `2.11.4` 保持现状。
+- Relay 所在宿主机持久化 `net.core.rmem_max=7500000` 和
+  `net.core.wmem_max=7500000`，重启 Relay 后 quic-go 的 UDP 缓冲区告警消失。
+  该参数按官方 quic-go 建议设置，并保留升级前 sysctl 备份。
 - 在新控制面回滚点之上单独启用Relay QUIC；Caddy的UDP443移交同一Relay，
   保留TCP443 WebSocket。独立客户端显示 `via quic`，WS升级握手返回101。
 - 文件证书的宿主机检查任务已部署，指纹相同不重启；域名错误拒绝重载，模拟
@@ -111,9 +115,9 @@ services:
   dashboard:
     image: netbirdio/dashboard:v2.92.0
   netbird-server:
-    image: netbirdio/netbird-server:0.78.1
+    image: netbirdio/netbird-server:0.78.2
   routing-peer:
-    image: netbirdio/netbird:0.78.1
+    image: netbirdio/netbird:0.78.2
 ```
 
 目标平台的manifest、配置与兼容性检查方法见
