@@ -1,6 +1,6 @@
 # 自建部署：官方推荐路径（getting-started.sh）
 
-> 适用版本：NetBird 官方脚本当前最新版。最近核对时间为 2026-09-10，官方最新稳定版为 NetBird `v0.78.1`、Dashboard `v2.92.0`。
+> 适用版本：NetBird 官方脚本当前最新版。最近核对时间为 2026-09-18，官方最新稳定版为 NetBird `v0.78.2`、Dashboard `v2.92.0`。
 
 ## 0. 核心约束（先确认）
 
@@ -139,7 +139,7 @@ docker compose up -d
 
 - `v0.71` 开始支持 IPv6 overlay addressing。升级到 `v0.73` 时，如果是存量环境，仍建议先选测试组启用 IPv6，确认 DNS、ACL、路由、Exit Node 和客户端版本后再扩大范围。
 - 不接外部 IdP、使用本地用户的部署，建议在首个管理员账号创建后开启 MFA，并保留备用管理员账号。
-- `v0.78.1` 是当前 `releases/latest` 指向的稳定版本；生产环境必须固定镜像标签，并先在测试环境验证后再更新。
+- `v0.78.2` 是当前 `releases/latest` 指向的稳定版本；生产环境必须固定镜像标签，并先在测试环境验证后再更新。
 - `v0.77.1` 的无交互变量只改变安装输入方式，不会把现有 Compose 自动安全升级到新版本。
 - Reverse Proxy、NetBird Proxy 与 CrowdSec 按官方脚本生成结果和当前 Dashboard
   配置；启用前先定义公网暴露、证书、来源地址和回滚边界。

@@ -221,9 +221,9 @@ docker compose up -d
 
 ## 8. 生产镜像标签清单
 
-本次核对的稳定基线是 NetBird `0.78.1`、Dashboard `v2.92.0`。新安装使用
+本次核对的稳定基线是 NetBird `0.78.2`、Dashboard `v2.92.0`。新安装使用
 combined `netbird-server`；下面只展示标签写法，不是可直接覆盖现有拓扑的完整
-Compose。本仓库已实测 `v0.78.1` 的存量外部 IdP 控制面与 Routing Peer 升级；
+Compose。本仓库已实测 `v0.78.2` 的存量外部 IdP 控制面与 Routing Peer 升级；
 组合容器的新装与 Reverse Proxy 未在本轮部署，生产使用前仍要在自己的测试环境完成备份、升级和回归：
 
 ```yaml
@@ -231,7 +231,7 @@ services:
   dashboard:
     image: netbirdio/dashboard:v2.92.0
   netbird-server:
-    image: netbirdio/netbird-server:0.78.1
+    image: netbirdio/netbird-server:0.78.2
 ```
 
 升级前后都保存镜像清单：
@@ -254,7 +254,7 @@ version: "2.4"
 
 services:
   routing-peer:
-    image: netbirdio/netbird:0.78.1
+    image: netbirdio/netbird:0.78.2
     container_name: netbird-routing-peer
     restart: unless-stopped
     networks:
