@@ -1,6 +1,10 @@
 # CHANGELOG
 
-## Unreleased
+## 0.7.0 - 2026-11-20
+
+- 强化 NetBird 操作 Skill 的生产升级流程，包括独立管理入口、版本与制品核对、数据库备份、分批切换和真实流量回滚验收。
+- 沉淀宽规则等效迁移、堡垒机端到端验收和备用 Routing Peer 的 SNAT 验证。
+- 补充宿主机内核与发行版升级、云厂商软件包保留、Kubernetes 节点排空预检及客户端更新清点。
 
 - 稳定基线更新至 NetBird `v0.78.2`、Dashboard `v2.92.0`，补充官方制品与五个在用 Routing Peer 的分阶段升级证据
 - README、部署说明及安全组文档明确 TCP/UDP 独立规则、Routing Peer 实际 WireGuard 直连端口与 Relay/HTTP3 端口归属

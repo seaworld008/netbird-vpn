@@ -1,6 +1,6 @@
 ---
 name: netbird-network-operator
-description: 规划、审计并执行 NetBird 网络自动化配置，包括自建部署、Groups、Policies、Networks、Resources、Routing Peers、Setup Keys、客户端、Kubernetes、多云、Exit Node、定向出口、验证和回滚。用户要求用 Codex、Claude Code 等 Agent 配置、打通、授权、排障或复核 NetBird 时使用；不用于普通 WireGuard 或其他 VPN 任务。
+description: 规划、审计并执行 NetBird 网络自动化配置，包括自建部署、安全升级、Groups、Policies、Networks、Resources、Routing Peers、Setup Keys、客户端、Kubernetes、多云、Exit Node、定向出口、验证和回滚。用户要求用 Codex、Claude Code 等 Agent 配置、升级、打通、授权、排障或复核 NetBird 时使用。适用范围为 NetBird。
 ---
 
 # NetBird Network Operator
@@ -56,6 +56,7 @@ description: 规划、审计并执行 NetBird 网络自动化配置，包括自�
 - 新场景优先 `Networks + Network Resources + Policies`；legacy `Network Routes` 仅在确有需要时使用，Exit Node 仍需关注。
 - 来源组、Routing Peer 组、资源组职责分离。数据库、SSH、Web 和环境边界按风险拆分，不创建方便但宽泛的 `All -> All`。
 - Policy 使用真实协议和最小端口；必须验证未授权来源。NetBird 只有 ALLOW 规则，不把列表顺序当成优先级或显式 DENY。
+- 注册新 Peer 前，按对象 ID 核对 `All` 的有效权限及关联资源。存在宽规则时，先验证旧设备的等效迁移路径，再按授权注册。
 - Policy API 的 `ports` 与 `port_ranges` 互斥；同一规则需要混合单端口和区间时，只提交 `port_ranges`，并把单端口写成 `start=end` 的范围。
 - Masquerade 默认开启；关闭前必须设计目标侧回程路由并验证真实源地址。
 - WireGuard 直连端口按实际 Peer 监听和容器映射核对，常见 `51820/udp`；TCP
@@ -91,5 +92,6 @@ description: 规划、审计并执行 NetBird 网络自动化配置，包括自�
 - [场景路由](references/scenario-router.md)：本仓库所有案例、Runbook 和 ADR 的选择表。
 - [验证与回滚](references/verification-and-rollback.md)：跨层验收矩阵、停止条件和回滚顺序。
 - [脱敏实战经验](references/live-lessons.md)：其他实战会话中已经验证或踩过的关键问题。
+- [上游升级流程](../../../docs/maintenance/upstream-upgrade-workflow.md)：核对稳定版、镜像和兼容性。生产升级同时读实战经验中的控制面升级与分批更新部分。
 - [QUIC 运维](../../../docs/operations/relay-quic-runbook.md) 与
   [超时诊断](../../../docs/operations/remote-development-timeouts.md)：端口、证书、包头与多服务验收。

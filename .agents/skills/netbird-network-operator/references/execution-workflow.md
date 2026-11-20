@@ -82,6 +82,8 @@ Masquerade / 目标侧预期源地址：
 ### 主机、客户端和 Kubernetes
 
 - SSH / 终端先记录主机名、时间、接口、路由、策略路由、转发、iptables / nftables、监听端口和相关进程。
+- SSH 认证前，用可信主机公钥或已核实的指纹校验握手。云命令结果缺少 stdout 时，可以通过已核验实例的云控制台将公开指纹写到带外控制台，再与 SSH 握手比对。现场记录仅保留公开指纹和校验结果。
+- 升级路由节点或 OpenSSH 前，实际验证独立于待升级链路的管理入口，并确认带外会话可续期。跨发行版升级使用可重新接入的终端，保留原 SSH 主机密钥、端口和启动方式。若公网 HTTPS 仍正常而 SSH 中断，通过带外入口检查 OpenSSH 事务和有效配置，恢复原监听后重新校验指纹并登录。
 - Docker 记录网络、业务容器 DNS/TCP、`StartedAt`、`RestartCount`，Routing Peer 使用独立项目和身份目录。
 - Kubernetes 记录节点、Pod / Service CIDR、CNI、kube-proxy、普通 Pod 外联和监控基线；修改 Routing Peer 不顺带修改业务 Deployment。
 - 客户端记录 `netbird status -d`、路由表、DNS、其他 VPN 和本地 LAN，特别检查 CIDR 重叠与最长前缀。
